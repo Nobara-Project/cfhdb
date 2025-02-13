@@ -1,7 +1,0 @@
-[package]
-name = "cfhdb"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-libpci = { path = "libpci", version = "0.1.0" }

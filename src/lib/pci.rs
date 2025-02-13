@@ -157,5 +157,7 @@ pub struct CfhdbPciProfile {
     pub packages: Option<Vec<String>>,
     pub install_script: Option<String>,
     pub remove_script: Option<String>,
+    pub experimental: bool,
+    pub removable: bool,
     pub priority: i32,
 }

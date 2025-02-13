@@ -6,6 +6,9 @@ edition = "2021"
 [dependencies]
 libpci = { path = "libpci", version = "0.1.0" }
 rusb = "0.9.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+reqwest = { version = "0.12", features = ["blocking"] }
 
 [lib]
 name = "libcfhdb"
