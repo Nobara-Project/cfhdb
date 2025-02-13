@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct CfhdbUsbDevice {
@@ -89,24 +90,24 @@ impl CfhdbUsbDevice {
         }
     }        
 
-    /*pub fn set_available_profiles(profile_data: &[CfhdbUsbProfile], device: &Self) {
+    pub fn set_available_profiles(profile_data: &[CfhdbUsbProfile], device: &Self) {
         let mut available_profiles: Vec<CfhdbUsbProfile> = vec![];
         for profile in profile_data.iter() {
             let matching = {
                 if
-                (profile.blacklisted_class_ids.contains(&"*".to_owned()) || profile.blacklisted_class_ids.contains(&device.class_id))
+                (profile.blacklisted_class_codes.contains(&"*".to_owned()) || profile.blacklisted_class_codes.contains(&device.class_code))
                 ||
                 (profile.blacklisted_vendor_ids.contains(&"*".to_owned()) || profile.blacklisted_vendor_ids.contains(&device.vendor_id))
                 ||
-                (profile.blacklisted_device_ids.contains(&"*".to_owned()) || profile.blacklisted_device_ids.contains(&device.device_id))
+                (profile.blacklisted_product_ids.contains(&"*".to_owned()) || profile.blacklisted_product_ids.contains(&device.product_id))
                 {
                     false
                 } else {
-                    (profile.class_ids.contains(&"*".to_owned()) || profile.class_ids.contains(&device.class_id))
+                    (profile.class_codes.contains(&"*".to_owned()) || profile.class_codes.contains(&device.class_code))
                     &&
                     (profile.vendor_ids.contains(&"*".to_owned()) || profile.vendor_ids.contains(&device.vendor_id))
                     &&
-                    (profile.device_ids.contains(&"*".to_owned()) || profile.device_ids.contains(&device.device_id))
+                    (profile.product_ids.contains(&"*".to_owned()) || profile.product_ids.contains(&device.product_id))
                 }
             };
     
@@ -118,7 +119,7 @@ impl CfhdbUsbDevice {
                 *device.available_profiles.borrow_mut() = Some(available_profiles.clone());
             };
         }
-    }*/
+    }
     
     pub fn get_devices() -> Option<Vec<Self>> {
         let from_hex =
@@ -191,6 +192,16 @@ impl CfhdbUsbDevice {
             }
         }
         Some(uniq_devices)
+    }
+    pub fn create_class_hashmap(devices: Vec<Self>) -> HashMap<String, Vec<Self>> {
+        let mut map: HashMap<String, Vec<Self>> = HashMap::new();
+
+        for device in devices {
+            // Use the entry API to get or create a Vec for the key
+            map.entry(device.class_code.clone()).or_insert_with(Vec::new).push(device);
+        }
+
+        map
     }    
 }
 
