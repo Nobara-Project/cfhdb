@@ -1,3 +1,3 @@
 {
-    "help_msg": "PikaOS Driver Manager"
+    "help_msg": "CFHDB - CosmicFusion Hardware Database\n* Command Line Arguments:\n= Program Arguments =\n-h | --help: Displays this message.\n-v | --version: Gets the program's version.\n-j | --json: Displays output as in JSON format.\n= PCI Arguments =\n-lpd | --list-pci-devices: Lists all PCI Devices.\n-lpp | --list-pci-profiles: Lists all PCI Profiles.\n-ipp | --install-pci-profile {profile codename}: Installs the specified PCI profile. \n-upp | --uninstall-pci-profile {profile codename}: Uninstalls the specified PCI profile. \n= USB Arguments =\n-lud | --list-usb-devices: Lists all USB Devices.\n-lup | --list-usb-profiles {profile codename}: Lists all USB Profiles.. \n-iup | --install-usb-profile {profile codename}: Installs the specified USB profile. \n-uup | --uninstall-usb-profile {profile codename}: Uninstalls the specified USB profile. "
 }

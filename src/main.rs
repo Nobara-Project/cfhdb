@@ -14,7 +14,7 @@ fn parse_args(args: Vec<String>) {
     let arg = args[1].as_str();
     match arg {
         "-h" | "--help" => {
-            println!("help msg")
+            println!("{}", t!("help_msg"))
         }
         "-v" | "--version" => {
             println!("help msg")
@@ -58,7 +58,7 @@ fn main() {
     let arg_num = args.len();
     match arg_num {
         0 | 1 => {
-            println!("help msg")
+            println!("{}", t!("help_msg"))
         }
         _ => {
             parse_args(args);
