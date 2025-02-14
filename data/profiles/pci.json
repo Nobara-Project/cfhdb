@@ -15,6 +15,22 @@
         "experimental": false,
         "removable": true,
         "priority": 10
+      },
+      {
+        "codename": "nvidia-driver-565",
+        "icon_name": "nvidia",
+        "class_ids": ["0300", "0302", "0380"],
+        "vendor_ids": ["10de"],
+        "device_ids": ["*"],
+        "blacklisted_class_ids": [],
+        "blacklisted_vendor_ids": [],
+        "blacklisted_device_ids": [],
+        "packages": "Option::is_none",
+        "install_script": "Option::is_none",
+        "remove_script": "Option::is_none",
+        "experimental": false,
+        "removable": true,
+        "priority": 10
       }
     ]
   }
