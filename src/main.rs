@@ -16,6 +16,30 @@ fn parse_args(args: Vec<String>) {
         "-h" | "--help" => {
             println!("help msg")
         }
+        "-v" | "--version" => {
+            println!("help msg")
+        }
+        "-j" | "--json" => {
+            println!("help msg")
+        }
+        "-lpp" | "--list-pci-profiles" => {
+            println!("help msg")
+        }
+        "-ipp" | "--install-pci-profile" => {
+            println!("help msg")
+        }
+        "-upp" | "--uninstall-pci-profile" => {
+            println!("help msg")
+        }
+        "-lup" | "--list-usb-profiles" => {
+            println!("help msg")
+        }
+        "-iup" | "--install-usb-profile" => {
+            println!("help msg")
+        }
+        "-uup" | "--uninstall-usb-profile" => {
+            println!("help msg")
+        }
         _ => {
             println!("unknown arg");
             std::process::exit(1);
@@ -29,18 +53,15 @@ fn main() {
         Some(v) => v.into_string().unwrap(),
         None => panic!("$LANG is not set"),
     };
+    rust_i18n::set_locale(current_locale.strip_suffix(".UTF-8").unwrap());
     let args: Vec<String> = std::env::args().collect();
     let arg_num = args.len();
     match arg_num {
         0 | 1 => {
             println!("help msg")
         }
-        2 => {
-            parse_args(args);
-        }
         _ => {
-            println!("too much args");
-            std::process::exit(1);
+            parse_args(args);
         }
     }
 }
