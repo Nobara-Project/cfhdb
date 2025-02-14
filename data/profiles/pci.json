@@ -2,6 +2,8 @@
     "profiles": [
       {
         "codename": "nvidia-driver-open-565",
+        "i18n_desc": "NVIDIA Graphics drivers (565) for Linux with Official Nvidia Open Modules (Recommended)",
+        "i18n_desc[en_US]": "NVIDIA Graphics drivers (565) for Linux with Official Nvidia Open Modules (Recommended)",
         "icon_name": "nvidia",
         "class_ids": ["0300", "0302", "0380"],
         "vendor_ids": ["10de"],
@@ -18,6 +20,8 @@
       },
       {
         "codename": "nvidia-driver-565",
+        "i18n_desc": "NVIDIA Graphics drivers (565) for Linux (Closed)",
+        "i18n_desc[en_US]": "NVIDIA Graphics drivers (565) for Linux (Closed)",
         "icon_name": "nvidia",
         "class_ids": ["0300", "0302", "0380"],
         "vendor_ids": ["10de"],
@@ -30,7 +34,7 @@
         "remove_script": "Option::is_none",
         "experimental": false,
         "removable": true,
-        "priority": 10
+        "priority": 12
       }
     ]
   }
