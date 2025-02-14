@@ -1,7 +1,7 @@
 {
     "profiles": [
       {
-        "i18n_desc": "Official Open source NVIDIA drivers for Linux (565)",
+        "codename": "nvidia-driver-open-565",
         "icon_name": "nvidia",
         "class_ids": ["0300", "0302", "0380"],
         "vendor_ids": ["10de"],

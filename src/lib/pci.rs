@@ -1,6 +1,6 @@
-use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct CfhdbPciDevice {
@@ -18,7 +18,7 @@ pub struct CfhdbPciDevice {
     pub kernel_driver: String,
     // Cfhdb Extras
     pub vendor_icon_name: String,
-    pub available_profiles: Rc<RefCell<Option<Vec<CfhdbPciProfile>>>>,
+    pub available_profiles: Rc<RefCell<Option<Vec<Rc<CfhdbPciProfile>>>>>,
 }
 
 impl CfhdbPciDevice {
@@ -34,58 +34,58 @@ impl CfhdbPciDevice {
                     }
                 }
             }
-            Err(_) => {
-            }
+            Err(_) => {}
         }
         return None;
     }
 
     pub fn set_available_profiles(profile_data: &[CfhdbPciProfile], device: &Self) {
-        let mut available_profiles: Vec<CfhdbPciProfile> = vec![];
+        let mut available_profiles: Vec<Rc<CfhdbPciProfile>> = vec![];
         for profile in profile_data.iter() {
             let matching = {
-                if
-                (profile.blacklisted_class_ids.contains(&"*".to_owned()) || profile.blacklisted_class_ids.contains(&device.class_id))
-                ||
-                (profile.blacklisted_vendor_ids.contains(&"*".to_owned()) || profile.blacklisted_vendor_ids.contains(&device.vendor_id))
-                ||
-                (profile.blacklisted_device_ids.contains(&"*".to_owned()) || profile.blacklisted_device_ids.contains(&device.device_id))
+                if (profile.blacklisted_class_ids.contains(&"*".to_owned())
+                    || profile.blacklisted_class_ids.contains(&device.class_id))
+                    || (profile.blacklisted_vendor_ids.contains(&"*".to_owned())
+                        || profile.blacklisted_vendor_ids.contains(&device.vendor_id))
+                    || (profile.blacklisted_device_ids.contains(&"*".to_owned())
+                        || profile.blacklisted_device_ids.contains(&device.device_id))
                 {
                     false
                 } else {
-                    (profile.class_ids.contains(&"*".to_owned()) || profile.class_ids.contains(&device.class_id))
-                    &&
-                    (profile.vendor_ids.contains(&"*".to_owned()) || profile.vendor_ids.contains(&device.vendor_id))
-                    &&
-                    (profile.device_ids.contains(&"*".to_owned()) || profile.device_ids.contains(&device.device_id))
+                    (profile.class_ids.contains(&"*".to_owned())
+                        || profile.class_ids.contains(&device.class_id))
+                        && (profile.vendor_ids.contains(&"*".to_owned())
+                            || profile.vendor_ids.contains(&device.vendor_id))
+                        && (profile.device_ids.contains(&"*".to_owned())
+                            || profile.device_ids.contains(&device.device_id))
                 }
             };
-    
+
             if matching {
-                available_profiles.push(profile.clone());
+                available_profiles.push(Rc::new(profile.clone()));
             };
-    
+
             if !available_profiles.is_empty() {
                 *device.available_profiles.borrow_mut() = Some(available_profiles.clone());
             };
         }
     }
-    
+
     pub fn get_devices() -> Option<Vec<Self>> {
         let from_hex =
             |hex_number: u32, fill: usize| -> String { format!("{:01$x}", hex_number, fill) };
-    
+
         // Initialize
         let mut pacc = libpci::PCIAccess::new(true);
-    
+
         // Get hardware devices
         let pci_devices = pacc.devices()?;
         let mut devices = vec![];
-    
+
         for mut iter in pci_devices.iter_mut() {
             // fill in header info we need
             iter.fill_info(libpci::Fill::IDENT as u32 | libpci::Fill::CLASS as u32);
-    
+
             let item_class = iter.class()?;
             let item_vendor = iter.vendor()?;
             let item_device = iter.device()?;
@@ -102,12 +102,12 @@ impl CfhdbPciDevice {
             let item_sysfs_id = "".to_owned();
             let item_kernel_driver = Self::get_kernel_driver(&item_sysfs_busid)?;
             let item_vendor_icon_name = "".to_owned();
-    
+
             devices.push(Self {
                 class_name: item_class,
                 device_name: item_device,
                 vendor_name: item_vendor,
-                class_id:  item_class_id,
+                class_id: item_class_id,
                 device_id: item_device_id,
                 vendor_id: item_vendor_id,
                 sysfs_busid: item_sysfs_busid,
@@ -117,14 +117,14 @@ impl CfhdbPciDevice {
                 available_profiles: Rc::default(),
             });
         }
-    
+
         let mut uniq_devices = vec![];
         for device in devices.iter() {
             // Check if already in list
             let found = uniq_devices.iter().any(|x: &Self| {
                 (device.sysfs_busid == x.sysfs_busid) && (device.sysfs_id == x.sysfs_id)
             });
-    
+
             if !found {
                 uniq_devices.push(device.clone());
             }
@@ -137,15 +137,18 @@ impl CfhdbPciDevice {
 
         for device in devices {
             // Use the entry API to get or create a Vec for the key
-            map.entry(device.class_id.clone()).or_insert_with(Vec::new).push(device);
+            map.entry(device.class_id.clone())
+                .or_insert_with(Vec::new)
+                .push(device);
         }
 
         map
-    }    
+    }
 }
 
 #[derive(Debug, Clone)]
 pub struct CfhdbPciProfile {
+    pub codename: String,
     pub i18n_desc: String,
     pub icon_name: String,
     pub class_ids: Vec<String>,
