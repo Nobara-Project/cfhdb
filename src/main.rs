@@ -1,6 +1,8 @@
 use libcfhdb::pci::*;
 use libcfhdb::usb::*;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 mod config;
 mod pci_func;
 mod usb_func;
@@ -11,19 +13,38 @@ extern crate rust_i18n;
 i18n!("locales", fallback = "en_US");
 
 fn parse_args(args: Vec<String>) {
-    let arg = args[1].as_str();
-    match arg {
+    let arg1 = args[1].as_str();
+    let arg2 = if args.len() > 2 {
+        Some(args[2].as_str())
+    } else {
+        None
+    };
+    match arg1 {
         "-h" | "--help" => {
             println!("{}", t!("help_msg"))
         }
         "-v" | "--version" => {
-            println!("help msg")
+            println!("{}", VERSION)
         }
         "-j" | "--json" => {
             println!("help msg")
         }
         "-lpp" | "--list-pci-profiles" => {
-            println!("help msg")
+            match arg2 {
+                Some(t) => {
+                    match t {
+                        "-j" | "--json" => {
+                            println!("help msg")
+                        }
+                        _ => {
+                            println!("help msg")
+                        }
+                    }
+                }
+                _ => {
+                    
+                }
+            }
         }
         "-ipp" | "--install-pci-profile" => {
             println!("help msg")
