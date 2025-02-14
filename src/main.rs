@@ -13,7 +13,7 @@ fn get_pci_profiles_from_url() {
     if let serde_json::Value::Array(profiles) = &res["profiles"] {
         for profile in profiles {
             let codename = profile["codename"].as_str().unwrap_or_default().to_string();
-            let icon_name = profile["icon_name"].to_string();
+            let icon_name = profile["icon_name"].as_str().unwrap_or("package-x-generic").to_string();
             let class_ids: Vec<String> = profile["class_ids"].as_array().expect("invalid_profile_class_ids").into_iter().map(|x| x.as_str().unwrap_or_default().to_string()).collect();
             let vendor_ids: Vec<String> = profile["vendor_ids"].as_array().expect("invalid_profile_class_ids").into_iter().map(|x| x.as_str().unwrap_or_default().to_string()).collect();
             let device_ids: Vec<String> = profile["device_ids"].as_array().expect("invalid_profile_class_ids").into_iter().map(|x| x.as_str().unwrap_or_default().to_string()).collect();
