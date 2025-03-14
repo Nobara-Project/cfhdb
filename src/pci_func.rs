@@ -1,6 +1,62 @@
 use libcfhdb::pci::*;
 use crate::config::*;
 use std::fs;
+use std::process::exit;
+use cli_table::{format::Justify, Cell, Style, Table};
+pub fn display_pci_devices(json: bool) {
+    match CfhdbPciDevice::get_devices() {
+        Some(devices) => {
+            let profiles = match get_pci_profiles_from_url() {
+              Ok(t) => t,
+                Err(e) => {
+                    eprintln!("{}", e);
+                    exit(1);
+                }
+            };
+            for i in &devices {
+                CfhdbPciDevice::set_available_profiles(&profiles, &i);
+            }
+            let hashmap = CfhdbPciDevice::create_class_hashmap(devices);
+            for (class, devices) in hashmap {
+                let mut table_struct = vec![];
+                for device in devices {
+                    let cell_table = vec![
+                         match device.vendor_name.char_indices().nth(18) {
+                            None => device.vendor_name,
+                            Some((idx, _)) => device.vendor_name[..idx].to_string() + "...",
+                        }.cell(),
+                         match device.device_name.char_indices().nth(36) {
+                             None => device.device_name,
+                             Some((idx, _)) => device.device_name[..idx].to_string() + "...",
+                         }.cell(),
+                         device.sysfs_busid.cell(),
+                         device.kernel_driver.cell(),
+                         device.enabled.cell()
+                    ];
+                    table_struct.push(cell_table);
+                }
+                let table =
+                    table_struct
+                    .table()
+                    .title(vec![
+                        "Vendor".cell().bold(true),
+                        "Name".cell().bold(true),
+                        "Sysfs Bus ID".cell().bold(true),
+                        "Driver".cell().bold(true),
+                        "Enabled".cell().bold(true),
+                    ])
+                    .bold(true);
+
+                let table_display = table.display().unwrap();
+
+                println!("{}\n{}", t!("pci_class_name_".to_string() + &class), table_display);
+            };
+        }
+        None => {
+            println!("failed to get devices")
+        }
+    }
+}
 
 fn get_pci_profiles_from_url() -> Result<Vec<CfhdbPciProfile>, std::io::Error> {
     let cached_db_path = std::path::Path::new("/var/cache/cfhdb/pci.json");
