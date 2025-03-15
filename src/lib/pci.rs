@@ -98,7 +98,7 @@ impl CfhdbPciDevice {
             let item_class = iter.class()?;
             let item_vendor = iter.vendor()?;
             let item_device = iter.device()?;
-            let item_class_id = from_hex(iter.class_id()? as _, 4);
+            let item_class_id = from_hex(iter.class_id()? as _, 4).to_uppercase();
             let item_device_id = from_hex(iter.device_id()? as _, 4);
             let item_vendor_id = from_hex(iter.vendor_id()? as _, 4);
             let item_sysfs_busid = format!(

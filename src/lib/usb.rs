@@ -155,7 +155,7 @@ impl CfhdbUsbDevice {
             };
             let item_serial_number_string_index = "".to_owned();
             let item_protocol_code = from_hex(device_descriptor.protocol_code() as _, 4);
-            let item_class_code = from_hex(device_descriptor.class_code() as _, 4);
+            let item_class_code = from_hex(device_descriptor.class_code() as _, 4).to_uppercase();
             let item_vendor_id = from_hex(device_descriptor.vendor_id() as _, 4);
             let item_product_id = from_hex(device_descriptor.product_id() as _, 4);
             let item_usb_version = device_descriptor.usb_version().to_string();

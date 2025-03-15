@@ -3,6 +3,8 @@ use crate::config::*;
 use std::fs;
 use std::process::exit;
 use cli_table::{format::Justify, Cell, Style, Table};
+use colored::Colorize;
+
 pub fn display_pci_devices(json: bool) {
     match CfhdbPciDevice::get_devices() {
         Some(devices) => {
@@ -49,33 +51,38 @@ pub fn display_pci_devices(json: bool) {
 
                 let table_display = table.display().unwrap();
 
-                println!("{}\n{}", t!("pci_class_name_".to_string() + &class), table_display);
+                println!("{}\n{}", t!("pci_class_name_".to_string() + &class).bright_green(), table_display);
             };
         }
         None => {
-            println!("failed to get devices")
+            println!("[{}] {}", t!("error").red(), t!("failed_to_get_pci_devices"))
         }
     }
 }
 
 fn get_pci_profiles_from_url() -> Result<Vec<CfhdbPciProfile>, std::io::Error> {
     let cached_db_path = std::path::Path::new("/var/cache/cfhdb/pci.json");
-    let data = match reqwest::blocking::get(PCI_PROFILE_JSON_URL) {
+    println!("[{}] {}", t!("info").bright_green(), t!("pci_download_starting"));
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .unwrap();
+    let data = match client.get(PCI_PROFILE_JSON_URL).send() {
         Ok(t) => {
-            println!("[Info] Downloaded pci json from url");
+            println!("[{}] {}", t!("info").bright_green(), t!("pci_download_successful"));
             let cache = t.text().unwrap();
             let _ = std::fs::File::create(cached_db_path);
             let _ = fs::write(cached_db_path, &cache);
             cache
         },
         Err(_) => {
-            println!("[Warn] Failed to download PCI Profile json from url, falling back to cache!");
+            println!("[{}] {}", t!("warn").bright_yellow(), t!("pci_download_failed"));
             if cached_db_path.exists() {
-                println!("[Info] PCI Profile Cache found!");
+                println!("[{}] {}", t!("info").bright_green(), t!("pci_download_cache_found"));
                 std::fs::read_to_string(cached_db_path).unwrap()
             } else {
-                println!("[Error] Could not find PCI Profile offline cache");
-                return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "PCI Cache could not be found"))
+                println!("[{}] {}", t!("error").red(), t!("pci_download_cache_not_found"));
+                return Err(std::io::Error::new(std::io::ErrorKind::NotFound, t!("pci_download_cache_not_found")))
             }
         }
     };

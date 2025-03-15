@@ -13,21 +13,22 @@ extern crate rust_i18n;
 i18n!("locales", fallback = "en_US");
 
 fn parse_args(args: Vec<String>) {
-    let mut arg1 = args[1].as_str();
-    let mut arg2 = if args.len() > 2 {
-        Some(args[2].as_str())
-    } else {
-        None
-    };
-    match arg2 {
-        Some(t) => {
-            if t == "-j" || t == "--json" {
-                (arg1, arg2) = (t, Some(arg1));
+    let mut json_mode = false;
+    let mut argument = "-h".to_string();
+    for arg in args {
+        match arg.as_str() {
+            "-j" | "--json" => {
+                json_mode = true
+
+
+            }
+
+            _ =>  {
+                argument = arg;
             }
         }
-        None => {}
     }
-    match arg1 {
+    match argument.as_str() {
         "-h" | "--help" => {
             println!("{}", t!("help_msg"))
         }
@@ -38,38 +39,10 @@ fn parse_args(args: Vec<String>) {
             println!("help msg")
         }
         "-lpd" | "--list-pci-devices" => {
-            match arg2 {
-                Some(t) => {
-                    match t {
-                        "-j" | "--json" => {
-                            println!("help msg")
-                        }
-                        _ => {
-                            pci_func::display_pci_devices(false);
-                        }
-                    }
-                }
-                _ => {
-                    pci_func::display_pci_devices(false);
-                }
-            }
+            pci_func::display_pci_devices(json_mode);
         }
         "-lpp" | "--list-pci-profiles" => {
-            match arg2 {
-                Some(t) => {
-                    match t {
-                        "-j" | "--json" => {
-                            println!("help msg")
-                        }
-                        _ => {
-                            println!("help msg")
-                        }
-                    }
-                }
-                _ => {
-                    
-                }
-            }
+            println!("help msg")
         }
         "-ipp" | "--install-pci-profile" => {
             println!("help msg")
@@ -78,38 +51,10 @@ fn parse_args(args: Vec<String>) {
             println!("help msg")
         }
         "-lup" | "--list-usb-profiles" => {
-            match arg2 {
-                Some(t) => {
-                    match t {
-                        "-j" | "--json" => {
-                            println!("help msg")
-                        }
-                        _ => {
-                            println!("help msg")
-                        }
-                    }
-                }
-                _ => {
-
-                }
-            }
+            println!("help msg")
         }
         "-lud" | "--list-usb-devices" => {
-            match arg2 {
-                Some(t) => {
-                    match t {
-                        "-j" | "--json" => {
-                            println!("help msg")
-                        }
-                        _ => {
-                            println!("help msg")
-                        }
-                    }
-                }
-                _ => {
-
-                }
-            }
+            println!("help msg")
         }
         "-iup" | "--install-usb-profile" => {
             println!("help msg")

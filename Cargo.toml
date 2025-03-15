@@ -11,6 +11,7 @@ serde_json = "1.0"
 reqwest = { version = "0.12", features = ["blocking"] }
 rust-i18n = "3.0.1"
 cli-table = "0.4.9"
+colored = "3.0.0"
 
 [lib]
 name = "libcfhdb"
