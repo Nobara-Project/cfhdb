@@ -1,9 +1,51 @@
+use std::collections::HashMap;
 use libcfhdb::pci::*;
 use crate::config::*;
 use std::fs;
 use std::process::exit;
 use cli_table::{format::Justify, Cell, Style, Table};
 use colored::Colorize;
+
+fn print_json(hashmap: HashMap<String, Vec<CfhdbPciDevice>>) {
+    let json_pretty = serde_json::to_string_pretty(&hashmap).unwrap();
+    println!("{}", json_pretty);
+}
+fn print_cli_table(hashmap: HashMap<String, Vec<CfhdbPciDevice>>) {
+    for (class, devices) in hashmap {
+        let mut table_struct = vec![];
+        for device in devices {
+            let cell_table = vec![
+                match device.vendor_name.char_indices().nth(18) {
+                    None => device.vendor_name,
+                    Some((idx, _)) => device.vendor_name[..idx].to_string() + "...",
+                }.cell(),
+                match device.device_name.char_indices().nth(36) {
+                    None => device.device_name,
+                    Some((idx, _)) => device.device_name[..idx].to_string() + "...",
+                }.cell(),
+                device.sysfs_busid.cell(),
+                device.kernel_driver.cell(),
+                device.enabled.cell()
+            ];
+            table_struct.push(cell_table);
+        }
+        let table =
+            table_struct
+                .table()
+                .title(vec![
+                    "Vendor".cell().bold(true),
+                    "Name".cell().bold(true),
+                    "Sysfs Bus ID".cell().bold(true),
+                    "Driver".cell().bold(true),
+                    "Enabled".cell().bold(true),
+                ])
+                .bold(true);
+
+        let table_display = table.display().unwrap();
+
+        println!("{}\n{}", t!("pci_class_name_".to_string() + &class).bright_green(), table_display);
+    };
+}
 
 pub fn display_pci_devices(json: bool) {
     match CfhdbPciDevice::get_devices() {
@@ -19,40 +61,11 @@ pub fn display_pci_devices(json: bool) {
                 CfhdbPciDevice::set_available_profiles(&profiles, &i);
             }
             let hashmap = CfhdbPciDevice::create_class_hashmap(devices);
-            for (class, devices) in hashmap {
-                let mut table_struct = vec![];
-                for device in devices {
-                    let cell_table = vec![
-                         match device.vendor_name.char_indices().nth(18) {
-                            None => device.vendor_name,
-                            Some((idx, _)) => device.vendor_name[..idx].to_string() + "...",
-                        }.cell(),
-                         match device.device_name.char_indices().nth(36) {
-                             None => device.device_name,
-                             Some((idx, _)) => device.device_name[..idx].to_string() + "...",
-                         }.cell(),
-                         device.sysfs_busid.cell(),
-                         device.kernel_driver.cell(),
-                         device.enabled.cell()
-                    ];
-                    table_struct.push(cell_table);
-                }
-                let table =
-                    table_struct
-                    .table()
-                    .title(vec![
-                        "Vendor".cell().bold(true),
-                        "Name".cell().bold(true),
-                        "Sysfs Bus ID".cell().bold(true),
-                        "Driver".cell().bold(true),
-                        "Enabled".cell().bold(true),
-                    ])
-                    .bold(true);
-
-                let table_display = table.display().unwrap();
-
-                println!("{}\n{}", t!("pci_class_name_".to_string() + &class).bright_green(), table_display);
-            };
+            if json {
+                print_json(hashmap)
+            } else {
+                print_cli_table(hashmap)
+            }
         }
         None => {
             println!("[{}] {}", t!("error").red(), t!("failed_to_get_pci_devices"))

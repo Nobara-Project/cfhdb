@@ -1,8 +1,33 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use serde::Serialize;
+use serde::Serializer;
+
+// Implement Serialize for Rc<RefCell<Option<Vec<Rc<CfhdbPciProfile>>>>>
 
 #[derive(Debug, Clone)]
+struct ProfileWrapper(Rc<RefCell<Option<Vec<Rc<CfhdbPciProfile>>>>>);
+impl Serialize for ProfileWrapper {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+    {
+        // Borrow the RefCell
+        let borrowed = self.0.borrow();
+
+        // Handle the Option
+        if let Some(profiles) = &*borrowed {
+            let simplified: Vec<String> = profiles.iter().map(|rc| rc.codename.to_string()).collect();
+            simplified.serialize(serializer)
+        } else {
+            // Serialize as null if the Option is None
+            serializer.serialize_none()
+        }
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
 pub struct CfhdbPciDevice {
     // String identification
     pub class_name: String,
@@ -19,7 +44,7 @@ pub struct CfhdbPciDevice {
     pub kernel_driver: String,
     // Cfhdb Extras
     pub vendor_icon_name: String,
-    pub available_profiles: Rc<RefCell<Option<Vec<Rc<CfhdbPciProfile>>>>>,
+    pub available_profiles: ProfileWrapper,
 }
 
 impl CfhdbPciDevice {
@@ -67,7 +92,7 @@ impl CfhdbPciDevice {
             };
 
             if !available_profiles.is_empty() {
-                *device.available_profiles.borrow_mut() = Some(available_profiles.clone());
+                *device.available_profiles.0.borrow_mut() = Some(available_profiles.clone());
             };
         }
     }
@@ -125,7 +150,7 @@ impl CfhdbPciDevice {
                 sysfs_id: item_sysfs_id,
                 kernel_driver: item_kernel_driver,
                 vendor_icon_name: item_vendor_icon_name,
-                available_profiles: Rc::default(),
+                available_profiles: ProfileWrapper(Rc::default()),
             });
         }
 
