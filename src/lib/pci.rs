@@ -38,7 +38,7 @@ pub struct CfhdbPciDevice {
     pub vendor_id: String,
     pub device_id: String,
     // System Info
-    pub enabled: bool,
+    pub enabled: Option<bool>,
     pub sysfs_busid: String,
     pub sysfs_id: String,
     pub kernel_driver: String,
@@ -133,7 +133,7 @@ impl CfhdbPciDevice {
                 from_hex(iter.dev()? as _, 2),
                 iter.func()?,
             );
-            let item_enabled= Self::get_enabled(&item_sysfs_busid).unwrap_or(true);
+            let item_enabled= Self::get_enabled(&item_sysfs_busid);
             let item_sysfs_id = "".to_owned();
             let item_kernel_driver = Self::get_kernel_driver(&item_sysfs_busid).unwrap_or("Unknown".to_string());
             let item_vendor_icon_name = "".to_owned();
@@ -145,7 +145,10 @@ impl CfhdbPciDevice {
                 class_id: item_class_id,
                 device_id: item_device_id,
                 vendor_id: item_vendor_id,
-                enabled: item_enabled,
+                enabled: match item_enabled {
+                    Ok(t) => Some(t),
+                    Err(_) => None,
+                },
                 sysfs_busid: item_sysfs_busid,
                 sysfs_id: item_sysfs_id,
                 kernel_driver: item_kernel_driver,

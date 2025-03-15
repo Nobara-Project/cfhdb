@@ -21,7 +21,7 @@ pub struct CfhdbUsbDevice {
     pub address: u8,
     pub sysfs_busid: String,
     pub kernel_driver: String,
-    pub enabled: bool,
+    pub enabled: Option<bool>,
     pub speed: rusb::Speed,
     // Cfhdb Extras
     pub vendor_icon_name: String,
@@ -182,7 +182,7 @@ impl CfhdbUsbDevice {
                 port_number: item_port_number,
                 address: item_address,
                 kernel_driver: item_kernel_driver,
-                enabled: true,
+                enabled: Some(true),
                 speed: item_speed,
                 vendor_icon_name: item_vendor_icon_name,
                 available_profiles: Rc::default(),

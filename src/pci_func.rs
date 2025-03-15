@@ -3,7 +3,7 @@ use libcfhdb::pci::*;
 use crate::config::*;
 use std::fs;
 use std::process::exit;
-use cli_table::{format::Justify, Cell, Style, Table};
+use cli_table::{format::Justify, Cell, Style, Table, Color};
 use colored::Colorize;
 
 fn print_json(hashmap: HashMap<String, Vec<CfhdbPciDevice>>) {
@@ -24,8 +24,22 @@ fn print_cli_table(hashmap: HashMap<String, Vec<CfhdbPciDevice>>) {
                     Some((idx, _)) => device.device_name[..idx].to_string() + "...",
                 }.cell(),
                 device.sysfs_busid.cell(),
-                device.kernel_driver.cell(),
-                device.enabled.cell()
+                match device.kernel_driver.as_str() {
+                    "Unknown" => t!("unknown").to_string().cell().foreground_color(Some(Color::Yellow)),
+                    _ => device.kernel_driver.cell()
+                },
+                match device.enabled {
+                    Some(t) => {
+                        if t {
+                            t!("enabled_yes").cell().foreground_color(Some(Color::Green))
+                        } else {
+                            t!("enabled_no").cell().foreground_color(Some(Color::Red))
+                        }
+                    }
+                    None => {
+                        t!("enabled_na").cell()
+                    }
+                }
             ];
             table_struct.push(cell_table);
         }
@@ -33,11 +47,11 @@ fn print_cli_table(hashmap: HashMap<String, Vec<CfhdbPciDevice>>) {
             table_struct
                 .table()
                 .title(vec![
-                    "Vendor".cell().bold(true),
-                    "Name".cell().bold(true),
-                    "Sysfs Bus ID".cell().bold(true),
-                    "Driver".cell().bold(true),
-                    "Enabled".cell().bold(true),
+                    t!("pci_table_vendor").cell().bold(true),
+                    t!("pci_table_name").cell().bold(true),
+                    t!("pci_table_sysfs_bus_id").cell().bold(true),
+                    t!("pci_table_driver").cell().bold(true),
+                    t!("pci_table_enabled").cell().bold(true),
                 ])
                 .bold(true);
 
