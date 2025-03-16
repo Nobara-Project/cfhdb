@@ -2,6 +2,32 @@ use libcfhdb::usb::*;
 use crate::config::*;
 use std::fs;
 
+pub fn display_usb_devices(json: bool) {
+    todo!()
+}
+pub fn display_usb_profiles(json: bool, target: &str) {
+    todo!()
+}
+
+pub fn install_usb_profile(profile_codename: &str) {
+    todo!()
+}
+pub fn uninstall_usb_profile(profile_codename: &str) {
+    todo!()
+}
+pub fn enable_usb_device(target_sysfs_id: &str) {
+    todo!()
+}
+pub fn disable_usb_device(target_sysfs_id: &str) {
+    todo!()
+}
+pub fn start_usb_device(target_sysfs_id: &str) {
+    todo!()
+}
+pub fn stop_usb_device(target_sysfs_id: &str) {
+    todo!()
+}
+
 fn get_usb_profiles_from_url() -> Result<Vec<CfhdbUsbProfile>, std::io::Error> {
     let cached_db_path = std::path::Path::new("/var/cache/cfhdb/usb.json");
     let data = match reqwest::blocking::get(USB_PROFILE_JSON_URL) {

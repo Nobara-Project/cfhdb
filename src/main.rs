@@ -61,56 +61,210 @@ fn print_help_msg() {
 }
 fn parse_args(args: Vec<String>) {
     let mut json_mode = false;
-    let mut argument = "-h".to_string();
+    let mut action = "-h";
+    let mut additional_arguments = vec![];
     for arg in args {
         match arg.as_str() {
+            // Global modes
             "-j" | "--json" => {
                 json_mode = true
-
-
             }
-
+            // Program arguments
+            "-h" | "--help" => {
+                action = "h"
+            }
+            "-v" | "--version" => {
+                action = "v"
+            }
+            // PCI arguments
+            "-lpd" | "--list-pci-devices" => {
+                action = "lpd"
+            }
+            "-lpp" | "--list-pci-profiles" => {
+                action = "lpp"
+            }
+            "-ipp" | "--install-pci-profile" => {
+                action = "ipp"
+            }
+            "-upp" | "--uninstall-pci-profile" => {
+                action = "upp"
+            }
+            "-epd" | "--enable-pci-device" => {
+                action = "epd"
+            }
+            "-dpd" | "--disable-pci-device" => {
+                action = "dpd"
+            }
+            "-sspd" | "--start-pci-device" => {
+                action = "sspd"
+            }
+            "-srpd" | "--stop-pci-device" => {
+                action = "srpd"
+            }
+            // USB arguments
+            "-lud" | "--list-usb-devices" => {
+                action = "lud"
+            }
+            "-lup" | "--list-usb-profiles" => {
+                action = "lup"
+            }
+            "-iup" | "--install-usb-profile" => {
+                action = "iup"
+            }
+            "-uup" | "--uninstall-usb-profile" => {
+                action = "uup"
+            }
+            "-eud" | "--enable-usb-device" => {
+                action = "eud"
+            }
+            "-dud" | "--disable-usb-device" => {
+                action = "dud"
+            }
+            "-ssud" | "--start-usb-device" => {
+                action = "ssud"
+            }
+            "-srud" | "--stop-usb-device" => {
+                action = "srud"
+            }
             _ =>  {
-                argument = arg;
+                additional_arguments.push(arg);
             }
         }
     }
-    match argument.as_str() {
-        "-h" | "--help" => {
+    match action {
+        // Program arguments
+        "h" => {
             print_help_msg()
         }
-        "-v" | "--version" => {
+        "v" => {
             println!("{}", VERSION)
         }
-        "-j" | "--json" => {
-            println!("help msg")
+        "j" => {
+            print_help_msg()
         }
-        "-lpd" | "--list-pci-devices" => {
+        // PCI arguments
+        "lpd" => {
             pci_func::display_pci_devices(json_mode);
         }
-        "-lpp" | "--list-pci-profiles" => {
-            println!("help msg")
+        "lpp" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                pci_func::display_pci_profiles(json_mode, &additional_arguments[1]);
+            }
         }
-        "-ipp" | "--install-pci-profile" => {
-            println!("help msg")
+        "ipp" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_profile_specified"));
+                std::process::exit(1);
+            } else {
+                pci_func::install_pci_profile(&additional_arguments[1]);
+            }
         }
-        "-upp" | "--uninstall-pci-profile" => {
-            println!("help msg")
+        "uup" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_profile_specified"));
+                std::process::exit(1);
+            } else {
+                pci_func::uninstall_pci_profile(&additional_arguments[1]);
+            }
         }
-        "-lup" | "--list-usb-profiles" => {
-            println!("help msg")
+        "epd" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                pci_func::enable_pci_device(&additional_arguments[1]);
+            }
         }
-        "-lud" | "--list-usb-devices" => {
-            println!("help msg")
+        "dpd" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                pci_func::disable_pci_device(&additional_arguments[1]);
+            }
         }
-        "-iup" | "--install-usb-profile" => {
-            println!("help msg")
+        "sspd" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                pci_func::start_pci_device(&additional_arguments[1]);
+            }
         }
-        "-uup" | "--uninstall-usb-profile" => {
-            println!("help msg")
+        "srpd" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                pci_func::stop_pci_device(&additional_arguments[1]);
+            }
         }
+        // USB arguments
+        "lud" => {
+            usb_func::display_usb_devices(json_mode);
+        }
+        "lup" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                usb_func::display_usb_profiles(json_mode, &additional_arguments[1]);
+            }
+        }
+        "iup" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_profile_specified"));
+                std::process::exit(1);
+            } else {
+                usb_func::install_usb_profile(&additional_arguments[1]);
+            }
+        }
+        "uup" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_profile_specified"));
+                std::process::exit(1);
+            } else {
+                usb_func::uninstall_usb_profile(&additional_arguments[1]);
+            }
+        }
+        "eud" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                usb_func::enable_usb_device(&additional_arguments[1]);
+            }
+        }
+        "dud" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                usb_func::disable_usb_device(&additional_arguments[1]);
+            }
+        }
+        "ssud" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                usb_func::start_usb_device(&additional_arguments[1]);
+            }
+        }
+        "srud" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                usb_func::stop_usb_device(&additional_arguments[1]);
+            }
+        }
+        // Unknown argument
         _ => {
-            println!("unknown arg");
+            eprintln!("{}", t!("unknown_argument"));
             std::process::exit(1);
         }
     }
@@ -127,7 +281,7 @@ fn main() {
     let arg_num = args.len();
     match arg_num {
         0 | 1 => {
-            println!("{}", t!("help_msg"))
+            print_help_msg();
         }
         _ => {
             parse_args(args);

@@ -87,6 +87,29 @@ pub fn display_pci_devices(json: bool) {
     }
 }
 
+pub fn display_pci_profiles(json: bool, target: &str) {
+    todo!()
+}
+
+pub fn install_pci_profile(profile_codename: &str) {
+    todo!()
+}
+pub fn uninstall_pci_profile(profile_codename: &str) {
+    todo!()
+}
+pub fn enable_pci_device(target_sysfs_id: &str) {
+    todo!()
+}
+pub fn disable_pci_device(target_sysfs_id: &str) {
+    todo!()
+}
+pub fn start_pci_device(target_sysfs_id: &str) {
+    todo!()
+}
+pub fn stop_pci_device(target_sysfs_id: &str) {
+    todo!()
+}
+
 fn get_pci_profiles_from_url() -> Result<Vec<CfhdbPciProfile>, std::io::Error> {
     let cached_db_path = std::path::Path::new("/var/cache/cfhdb/pci.json");
     println!("[{}] {}", t!("info").bright_green(), t!("pci_download_starting"));
