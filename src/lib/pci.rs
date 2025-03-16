@@ -1,24 +1,25 @@
+use serde::Serialize;
+use serde::Serializer;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use serde::Serialize;
-use serde::Serializer;
 
 // Implement Serialize for Rc<RefCell<Option<Vec<Rc<CfhdbPciProfile>>>>>
 
 #[derive(Debug, Clone)]
-struct ProfileWrapper(Rc<RefCell<Option<Vec<Rc<CfhdbPciProfile>>>>>);
+pub struct ProfileWrapper(pub Rc<RefCell<Option<Vec<Rc<CfhdbPciProfile>>>>>);
 impl Serialize for ProfileWrapper {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         // Borrow the RefCell
         let borrowed = self.0.borrow();
 
         // Handle the Option
         if let Some(profiles) = &*borrowed {
-            let simplified: Vec<String> = profiles.iter().map(|rc| rc.codename.to_string()).collect();
+            let simplified: Vec<String> =
+                profiles.iter().map(|rc| rc.codename.to_string()).collect();
             simplified.serialize(serializer)
         } else {
             // Serialize as null if the Option is None
@@ -133,9 +134,10 @@ impl CfhdbPciDevice {
                 from_hex(iter.dev()? as _, 2),
                 iter.func()?,
             );
-            let item_enabled= Self::get_enabled(&item_sysfs_busid);
+            let item_enabled = Self::get_enabled(&item_sysfs_busid);
             let item_sysfs_id = "".to_owned();
-            let item_kernel_driver = Self::get_kernel_driver(&item_sysfs_busid).unwrap_or("Unknown".to_string());
+            let item_kernel_driver =
+                Self::get_kernel_driver(&item_sysfs_busid).unwrap_or("Unknown".to_string());
             let item_vendor_icon_name = "".to_owned();
 
             devices.push(Self {
@@ -185,7 +187,7 @@ impl CfhdbPciDevice {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CfhdbPciProfile {
     pub codename: String,
     pub i18n_desc: String,

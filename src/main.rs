@@ -1,6 +1,6 @@
+use cli_table::{format::Justify, Cell, Color, Style, Table};
 use libcfhdb::pci::*;
 use libcfhdb::usb::*;
-use cli_table::{format::Justify, Cell, Style, Table, Color};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -13,47 +13,189 @@ mod usb_func;
 extern crate rust_i18n;
 i18n!("locales", fallback = "en_US");
 
-
 fn print_help_msg() {
     let table = vec![
         // Secondary titles
-        vec![t!("help_msg_title1").cell().bold(true).justify(Justify::Center).foreground_color(Some(Color::Blue)), t!("help_msg_title2").cell().bold(true).justify(Justify::Center).foreground_color(Some(Color::Blue)), t!("help_msg_title3").cell().bold(true).justify(Justify::Center).foreground_color(Some(Color::Blue))],
+        vec![
+            t!("help_msg_title1")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Blue)),
+            t!("help_msg_title2")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Blue)),
+            t!("help_msg_title3")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Blue)),
+        ],
         // Program arguments title
-        vec![t!("").cell().bold(true).justify(Justify::Center).foreground_color(Some(Color::Yellow)), t!("help_msg_title_program").cell().bold(true).justify(Justify::Center).foreground_color(Some(Color::Yellow)), t!("").cell().bold(true).justify(Justify::Center).foreground_color(Some(Color::Yellow))],
+        vec![
+            t!("")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Yellow)),
+            t!("help_msg_title_program")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Yellow)),
+            t!("")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Yellow)),
+        ],
         // Program arguments entries
-        vec![t!("help_msg_action_help").cell(), "--help".cell(), "-h".cell()],
-        vec![t!("help_msg_action_version").cell(), "--version".cell(), "-v".cell()],
-        vec![t!("help_msg_action_json").cell(), "--json".cell(), "-j".cell()],
+        vec![
+            t!("help_msg_action_help").cell(),
+            "--help".cell(),
+            "-h".cell(),
+        ],
+        vec![
+            t!("help_msg_action_version").cell(),
+            "--version".cell(),
+            "-v".cell(),
+        ],
+        vec![
+            t!("help_msg_action_json").cell(),
+            "--json".cell(),
+            "-j".cell(),
+        ],
         // PCI arguments title
-        vec![t!("").cell().bold(true).justify(Justify::Center).foreground_color(Some(Color::Yellow)), t!("help_msg_title_pci").cell().bold(true).justify(Justify::Center).foreground_color(Some(Color::Yellow)), t!("").cell().bold(true).justify(Justify::Center).foreground_color(Some(Color::Yellow))],
+        vec![
+            t!("")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Yellow)),
+            t!("help_msg_title_pci")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Yellow)),
+            t!("")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Yellow)),
+        ],
         // PCI arguments entries
-        vec![t!("help_msg_action_list_pci_devices").cell(), "--list-pci-devices".cell(), "-lpd".cell()],
-        vec![t!("help_msg_action_list_compatible_pci_profiles").cell(), "--list-pci-profiles {sysfs_id}".cell(), "-lpp".cell()],
-        vec![t!("help_msg_action_install_pci_profile").cell(), "--install-pci-profile {profile codename}".cell(), "-ipp".cell()],
-        vec![t!("help_msg_action_uninstall_pci_profile").cell(), "--uninstall-pci-profile {profile codename}".cell(), "-upp".cell()],
-        vec![t!("help_msg_action_enable_pci_device").cell(), "--enable-pci-device {sysfs_id}".cell(), "-epd".cell()],
-        vec![t!("help_msg_action_disable_pci_device").cell(), "--disable-pci-device {sysfs_id}".cell(), "-dpd".cell()],
-        vec![t!("help_msg_action_start_pci_device").cell(), "--start-pci-device {sysfs_id}".cell(), "-sspd".cell()],
-        vec![t!("help_msg_action_stop_pci_device").cell(), "--stop-pci-device {sysfs_id}".cell(), "-srpd".cell()],
+        vec![
+            t!("help_msg_action_list_pci_devices").cell(),
+            "--list-pci-devices".cell(),
+            "-lpd".cell(),
+        ],
+        vec![
+            t!("help_msg_action_list_compatible_pci_profiles").cell(),
+            "--list-pci-profiles {sysfs_id}".cell(),
+            "-lpp".cell(),
+        ],
+        vec![
+            t!("help_msg_action_install_pci_profile").cell(),
+            "--install-pci-profile {profile codename}".cell(),
+            "-ipp".cell(),
+        ],
+        vec![
+            t!("help_msg_action_uninstall_pci_profile").cell(),
+            "--uninstall-pci-profile {profile codename}".cell(),
+            "-upp".cell(),
+        ],
+        vec![
+            t!("help_msg_action_enable_pci_device").cell(),
+            "--enable-pci-device {sysfs_id}".cell(),
+            "-epd".cell(),
+        ],
+        vec![
+            t!("help_msg_action_disable_pci_device").cell(),
+            "--disable-pci-device {sysfs_id}".cell(),
+            "-dpd".cell(),
+        ],
+        vec![
+            t!("help_msg_action_start_pci_device").cell(),
+            "--start-pci-device {sysfs_id}".cell(),
+            "-sspd".cell(),
+        ],
+        vec![
+            t!("help_msg_action_stop_pci_device").cell(),
+            "--stop-pci-device {sysfs_id}".cell(),
+            "-srpd".cell(),
+        ],
         // USB arguments title
-        vec![t!("").cell().bold(true).justify(Justify::Center).foreground_color(Some(Color::Yellow)), t!("help_msg_title_usb").cell().bold(true).justify(Justify::Center).foreground_color(Some(Color::Yellow)), t!("").cell().bold(true).justify(Justify::Center).foreground_color(Some(Color::Yellow))],
+        vec![
+            t!("")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Yellow)),
+            t!("help_msg_title_usb")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Yellow)),
+            t!("")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Yellow)),
+        ],
         // USB arguments entries
-        vec![t!("help_msg_action_list_usb_devices").cell(), "--list-usb-devices".cell(), "-lud".cell()],
-        vec![t!("help_msg_action_list_compatible_usb_profiles").cell(), "--list-usb-profiles {sysfs_id}".cell(), "-lup".cell()],
-        vec![t!("help_msg_action_install_usb_profile").cell(), "--install-usb-profile {profile codename}".cell(), "-iup".cell()],
-        vec![t!("help_msg_action_uninstall_usb_profile").cell(), "--uninstall-usb-profile {profile codename}".cell(), "-uup".cell()],
-        vec![t!("help_msg_action_enable_usb_device").cell(), "--enable-usb-device {sysfs_id}".cell(), "-eud".cell()],
-        vec![t!("help_msg_action_disable_usb_device").cell(), "--disable-usb-device {sysfs_id}".cell(), "-dud".cell()],
-        vec![t!("help_msg_action_start_usb_device").cell(), "--start-usb-device {sysfs_id}".cell(), "-ssud".cell()],
-        vec![t!("help_msg_action_stop_usb_device").cell(), "--stop-usb-device {sysfs_id}".cell(), "-srud".cell()],
+        vec![
+            t!("help_msg_action_list_usb_devices").cell(),
+            "--list-usb-devices".cell(),
+            "-lud".cell(),
+        ],
+        vec![
+            t!("help_msg_action_list_compatible_usb_profiles").cell(),
+            "--list-usb-profiles {sysfs_id}".cell(),
+            "-lup".cell(),
+        ],
+        vec![
+            t!("help_msg_action_install_usb_profile").cell(),
+            "--install-usb-profile {profile codename}".cell(),
+            "-iup".cell(),
+        ],
+        vec![
+            t!("help_msg_action_uninstall_usb_profile").cell(),
+            "--uninstall-usb-profile {profile codename}".cell(),
+            "-uup".cell(),
+        ],
+        vec![
+            t!("help_msg_action_enable_usb_device").cell(),
+            "--enable-usb-device {sysfs_id}".cell(),
+            "-eud".cell(),
+        ],
+        vec![
+            t!("help_msg_action_disable_usb_device").cell(),
+            "--disable-usb-device {sysfs_id}".cell(),
+            "-dud".cell(),
+        ],
+        vec![
+            t!("help_msg_action_start_usb_device").cell(),
+            "--start-usb-device {sysfs_id}".cell(),
+            "-ssud".cell(),
+        ],
+        vec![
+            t!("help_msg_action_stop_usb_device").cell(),
+            "--stop-usb-device {sysfs_id}".cell(),
+            "-srud".cell(),
+        ],
     ]
-        .table()
-        .title(vec![
-            t!("help_msg_title0").cell().bold(true).justify(Justify::Center),
-            VERSION.cell().bold(true).justify(Justify::Center),
-            "".cell().bold(true).justify(Justify::Center),
-        ])
-        .bold(true);
+    .table()
+    .title(vec![
+        t!("help_msg_title0")
+            .cell()
+            .bold(true)
+            .justify(Justify::Center),
+        VERSION.cell().bold(true).justify(Justify::Center),
+        "".cell().bold(true).justify(Justify::Center),
+    ])
+    .bold(true);
 
     let table_display = table.display().unwrap();
 
@@ -66,82 +208,40 @@ fn parse_args(args: Vec<String>) {
     for arg in args {
         match arg.as_str() {
             // Global modes
-            "-j" | "--json" => {
-                json_mode = true
-            }
+            "-j" | "--json" => json_mode = true,
             // Program arguments
-            "-h" | "--help" => {
-                action = "h"
-            }
-            "-v" | "--version" => {
-                action = "v"
-            }
+            "-h" | "--help" => action = "h",
+            "-v" | "--version" => action = "v",
             // PCI arguments
-            "-lpd" | "--list-pci-devices" => {
-                action = "lpd"
-            }
-            "-lpp" | "--list-pci-profiles" => {
-                action = "lpp"
-            }
-            "-ipp" | "--install-pci-profile" => {
-                action = "ipp"
-            }
-            "-upp" | "--uninstall-pci-profile" => {
-                action = "upp"
-            }
-            "-epd" | "--enable-pci-device" => {
-                action = "epd"
-            }
-            "-dpd" | "--disable-pci-device" => {
-                action = "dpd"
-            }
-            "-sspd" | "--start-pci-device" => {
-                action = "sspd"
-            }
-            "-srpd" | "--stop-pci-device" => {
-                action = "srpd"
-            }
+            "-lpd" | "--list-pci-devices" => action = "lpd",
+            "-lpp" | "--list-pci-profiles" => action = "lpp",
+            "-ipp" | "--install-pci-profile" => action = "ipp",
+            "-upp" | "--uninstall-pci-profile" => action = "upp",
+            "-epd" | "--enable-pci-device" => action = "epd",
+            "-dpd" | "--disable-pci-device" => action = "dpd",
+            "-sspd" | "--start-pci-device" => action = "sspd",
+            "-srpd" | "--stop-pci-device" => action = "srpd",
             // USB arguments
-            "-lud" | "--list-usb-devices" => {
-                action = "lud"
-            }
-            "-lup" | "--list-usb-profiles" => {
-                action = "lup"
-            }
-            "-iup" | "--install-usb-profile" => {
-                action = "iup"
-            }
-            "-uup" | "--uninstall-usb-profile" => {
-                action = "uup"
-            }
-            "-eud" | "--enable-usb-device" => {
-                action = "eud"
-            }
-            "-dud" | "--disable-usb-device" => {
-                action = "dud"
-            }
-            "-ssud" | "--start-usb-device" => {
-                action = "ssud"
-            }
-            "-srud" | "--stop-usb-device" => {
-                action = "srud"
-            }
-            _ =>  {
+            "-lud" | "--list-usb-devices" => action = "lud",
+            "-lup" | "--list-usb-profiles" => action = "lup",
+            "-iup" | "--install-usb-profile" => action = "iup",
+            "-uup" | "--uninstall-usb-profile" => action = "uup",
+            "-eud" | "--enable-usb-device" => action = "eud",
+            "-dud" | "--disable-usb-device" => action = "dud",
+            "-ssud" | "--start-usb-device" => action = "ssud",
+            "-srud" | "--stop-usb-device" => action = "srud",
+            _ => {
                 additional_arguments.push(arg);
             }
         }
     }
     match action {
         // Program arguments
-        "h" => {
-            print_help_msg()
-        }
+        "h" => print_help_msg(),
         "v" => {
             println!("{}", VERSION)
         }
-        "j" => {
-            print_help_msg()
-        }
+        "j" => print_help_msg(),
         // PCI arguments
         "lpd" => {
             pci_func::display_pci_devices(json_mode);

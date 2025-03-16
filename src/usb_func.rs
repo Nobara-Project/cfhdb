@@ -1,5 +1,5 @@
-use libcfhdb::usb::*;
 use crate::config::*;
+use libcfhdb::usb::*;
 use std::fs;
 
 pub fn display_usb_devices(json: bool) {
@@ -37,7 +37,7 @@ fn get_usb_profiles_from_url() -> Result<Vec<CfhdbUsbProfile>, std::io::Error> {
             let _ = std::fs::File::create(cached_db_path);
             let _ = fs::write(cached_db_path, &cache);
             cache
-        },
+        }
         Err(_) => {
             println!("[Warn] Failed to download USB Profile json from url, falling back to cache!");
             if cached_db_path.exists() {
@@ -45,7 +45,10 @@ fn get_usb_profiles_from_url() -> Result<Vec<CfhdbUsbProfile>, std::io::Error> {
                 std::fs::read_to_string(cached_db_path).unwrap()
             } else {
                 println!("[Error] Could not find USB Profile offline cache");
-                return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "USB Cache could not be found"))
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    "USB Cache could not be found",
+                ));
             }
         }
     };
@@ -54,18 +57,23 @@ fn get_usb_profiles_from_url() -> Result<Vec<CfhdbUsbProfile>, std::io::Error> {
     if let serde_json::Value::Array(profiles) = &res["profiles"] {
         for profile in profiles {
             let codename = profile["codename"].as_str().unwrap_or_default().to_string();
-            let i18n_desc = match profile[format!("i18n_desc[{}]", rust_i18n::locale().to_string())].as_str() {
-                Some(t) => {
-                    if !t.is_empty() {
-                        t.to_string()
-                    } else {
-                        profile["i18n_desc"].as_str().unwrap_or_default().to_string()
+            let i18n_desc =
+                match profile[format!("i18n_desc[{}]", rust_i18n::locale().to_string())].as_str() {
+                    Some(t) => {
+                        if !t.is_empty() {
+                            t.to_string()
+                        } else {
+                            profile["i18n_desc"]
+                                .as_str()
+                                .unwrap_or_default()
+                                .to_string()
+                        }
                     }
-                }
-                None => {
-                    profile["i18n_desc"].as_str().unwrap_or_default().to_string()
-                }
-            };
+                    None => profile["i18n_desc"]
+                        .as_str()
+                        .unwrap_or_default()
+                        .to_string(),
+                };
             let icon_name = profile["icon_name"]
                 .as_str()
                 .unwrap_or("package-x-generic")
