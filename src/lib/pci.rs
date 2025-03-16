@@ -148,7 +148,13 @@ impl CfhdbPciDevice {
                 device_id: item_device_id,
                 vendor_id: item_vendor_id,
                 enabled: match item_enabled {
-                    Ok(t) => Some(t),
+                    Ok(t) => {
+                        if item_kernel_driver != "Unknown" {
+                            Some(t)
+                        } else {
+                            None
+                        }
+                    }
                     Err(_) => None,
                 },
                 sysfs_busid: item_sysfs_busid,

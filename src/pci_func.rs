@@ -179,9 +179,11 @@ pub fn display_pci_profiles(json: bool, target: &str) {
                     }
                 };
                 profile_rc.sort_by_key(|k| k.priority);
-                let profiles = profile_rc.iter().map(|s| s.codename.clone()).collect::<Vec<_>>();
-                let json_pretty = serde_json::to_string_pretty(&profiles)
-                    .unwrap();
+                let profiles = profile_rc
+                    .iter()
+                    .map(|s| s.codename.clone())
+                    .collect::<Vec<_>>();
+                let json_pretty = serde_json::to_string_pretty(&profiles).unwrap();
                 println!("{}", json_pretty);
             } else {
                 display_pci_profiles_print_cli_table(target_device);
