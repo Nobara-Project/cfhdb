@@ -46,6 +46,7 @@
     "pci_table_name": "Name",
     "pci_table_sysfs_bus_id": "Sysfs Bus ID",
     "pci_table_driver": "Driver",
+    "pci_table_started": "Started",
     "pci_table_enabled": "Enabled",
     "pci_download_starting": "Downloading PCI profiles database.",
     "pci_download_successful": "PCI profiles database successfully downloaded, loading...",

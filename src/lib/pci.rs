@@ -2,10 +2,12 @@ use serde::Serialize;
 use serde::Serializer;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::os::unix::fs::PermissionsExt;
-use std::rc::Rc;
+use std::fs::File;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
+use std::io::{self, BufRead};
+use std::os::unix::fs::PermissionsExt;
+use std::rc::Rc;
 
 // Implement Serialize for Rc<RefCell<Option<Vec<Rc<CfhdbPciProfile>>>>>
 
@@ -42,7 +44,8 @@ pub struct CfhdbPciDevice {
     pub vendor_id: String,
     pub device_id: String,
     // System Info
-    pub enabled: Option<bool>,
+    pub started: Option<bool>,
+    pub enabled: bool,
     pub sysfs_busid: String,
     pub sysfs_id: String,
     pub kernel_driver: String,
@@ -101,12 +104,33 @@ impl CfhdbPciDevice {
         }
     }
 
-    fn get_enabled(busid: &str) -> Result<bool, std::io::Error> {
+    fn get_started(busid: &str) -> Result<bool, std::io::Error> {
         let device_enable_path = std::path::Path::new("/sys/bus/pci/devices")
             .join(busid)
             .join("enable");
         let enable_status = std::fs::read_to_string(&device_enable_path)?;
         Ok(enable_status.trim() == "1")
+    }
+
+    fn get_enabled(busid: &str) -> bool {
+        let pci_busid_blacklist_path = "/etc/cfhdb/pci_blacklist";
+        match File::open(&pci_busid_blacklist_path) {
+            Ok(file) => {
+                let reader = io::BufReader::new(file);
+                for line in reader.lines() {
+                    match line {
+                        Ok(t) => {
+                            if t.trim() == busid {
+                                return false;
+                            }
+                        }
+                        Err(_) => {}
+                    };
+                }
+            }
+            Err(_) => {}
+        }
+        return true;
     }
 
     pub fn get_devices() -> Option<Vec<Self>> {
@@ -137,6 +161,7 @@ impl CfhdbPciDevice {
                 from_hex(iter.dev()? as _, 2),
                 iter.func()?,
             );
+            let item_started = Self::get_started(&item_sysfs_busid);
             let item_enabled = Self::get_enabled(&item_sysfs_busid);
             let item_sysfs_id = "".to_owned();
             let item_kernel_driver =
@@ -150,7 +175,7 @@ impl CfhdbPciDevice {
                 class_id: item_class_id,
                 device_id: item_device_id,
                 vendor_id: item_vendor_id,
-                enabled: match item_enabled {
+                started: match item_started {
                     Ok(t) => {
                         if item_kernel_driver != "Unknown" {
                             Some(t)
@@ -160,6 +185,7 @@ impl CfhdbPciDevice {
                     }
                     Err(_) => None,
                 },
+                enabled: item_enabled,
                 sysfs_busid: item_sysfs_busid,
                 sysfs_id: item_sysfs_id,
                 kernel_driver: item_kernel_driver,
@@ -225,11 +251,17 @@ impl CfhdbPciProfile {
                 .write(true)
                 .create(true)
                 .truncate(true)
-                .open(file_path).expect(&(file_path.to_string() + "cannot be read"));
-            file.write_all(format!("#! /bin/bash\nset -e\n{}", self.check_script).as_bytes()).expect(&(file_path.to_string() + "cannot be written to"));
-            let mut perms = file.metadata().expect(&(file_path.to_string() + "cannot be read")).permissions();
+                .open(file_path)
+                .expect(&(file_path.to_string() + "cannot be read"));
+            file.write_all(format!("#! /bin/bash\nset -e\n{}", self.check_script).as_bytes())
+                .expect(&(file_path.to_string() + "cannot be written to"));
+            let mut perms = file
+                .metadata()
+                .expect(&(file_path.to_string() + "cannot be read"))
+                .permissions();
             perms.set_mode(0o755);
-            fs::set_permissions(file_path, perms).expect(&(file_path.to_string() + "cannot be written to"));
+            fs::set_permissions(file_path, perms)
+                .expect(&(file_path.to_string() + "cannot be written to"));
         }
         duct::cmd!("bash", "-c", file_path).run().is_ok()
     }

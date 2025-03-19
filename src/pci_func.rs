@@ -34,7 +34,7 @@ fn display_pci_devices_print_cli_table(hashmap: HashMap<String, Vec<CfhdbPciDevi
                         .foreground_color(Some(Color::Yellow)),
                     _ => device.kernel_driver.cell(),
                 },
-                match device.enabled {
+                match device.started {
                     Some(t) => {
                         if t {
                             t!("enabled_yes")
@@ -46,6 +46,13 @@ fn display_pci_devices_print_cli_table(hashmap: HashMap<String, Vec<CfhdbPciDevi
                     }
                     None => t!("enabled_na").cell(),
                 },
+                if device.enabled {
+                    t!("enabled_yes")
+                        .cell()
+                        .foreground_color(Some(Color::Green))
+                } else {
+                    t!("enabled_no").cell().foreground_color(Some(Color::Red))
+                },
             ];
             table_struct.push(cell_table);
         }
@@ -56,6 +63,7 @@ fn display_pci_devices_print_cli_table(hashmap: HashMap<String, Vec<CfhdbPciDevi
                 t!("pci_table_name").cell().bold(true),
                 t!("pci_table_sysfs_bus_id").cell().bold(true),
                 t!("pci_table_driver").cell().bold(true),
+                t!("pci_table_started").cell().bold(true),
                 t!("pci_table_enabled").cell().bold(true),
             ])
             .bold(true);
