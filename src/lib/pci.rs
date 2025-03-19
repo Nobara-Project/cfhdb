@@ -2,12 +2,14 @@ use serde::Serialize;
 use serde::Serializer;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fmt::format;
 use std::fs::File;
 use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::io::{ErrorKind, Write};
 use std::io::{self, BufRead};
 use std::os::unix::fs::PermissionsExt;
 use std::rc::Rc;
+use regex::Regex;
 
 // Implement Serialize for Rc<RefCell<Option<Vec<Rc<CfhdbPciProfile>>>>>
 
@@ -131,6 +133,26 @@ impl CfhdbPciDevice {
             Err(_) => {}
         }
         return true;
+    }
+
+    fn get_modinfo_name(busid: &str) -> Result<String, std::io::Error> {
+        let modalias = fs::read_to_string(format!("/sys/bus/pci/devices/{}/modalias", busid))?;
+        let modinfo_cmd = duct::cmd!("modinfo", modalias);
+        let stdout = modinfo_cmd.read()?;
+        let re = Regex::new(r"name:\s+(\w+)").unwrap();
+        for line in stdout.lines() {
+            if let Some(captures) = re.captures(line) {
+                // Extract the module name from the capture group
+                if let Some(module_name) = captures.get(1) {
+                    return Ok(module_name.as_str().to_string());
+                }
+            }
+        }
+        Err(std::io::Error::new(ErrorKind::NotFound, "not found"))
+    }
+
+    pub fn stop_device(&self) {
+
     }
 
     pub fn get_devices() -> Option<Vec<Self>> {

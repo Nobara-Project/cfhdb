@@ -13,6 +13,7 @@ rust-i18n = "3.0.1"
 cli-table = "0.4.9"
 colored = "3.0.0"
 duct = "0.13.7"
+regex = "1.11.1"
 
 [lib]
 name = "libcfhdb"
