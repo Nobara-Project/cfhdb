@@ -86,7 +86,7 @@ fn display_pci_profiles_print_cli_table(target: &CfhdbPciDevice) {
     profiles.sort_by_key(|k| k.priority);
     for profile in profiles {
         let profile = profile.deref().clone();
-        let profile_check_status = duct::cmd!("false").run().is_ok();
+        let profile_status = profile.get_status();
         let cell_table = vec![
             profile.codename.cell(),
             match profile.i18n_desc.char_indices().nth(36) {
@@ -101,8 +101,10 @@ fn display_pci_profiles_print_cli_table(target: &CfhdbPciDevice) {
             } else {
                 t!("enabled_no").cell().foreground_color(Some(Color::Green))
             },
-            if profile_check_status {
-                t!("enabled_yes").cell().foreground_color(Some(Color::Green))
+            if profile_status {
+                t!("enabled_yes")
+                    .cell()
+                    .foreground_color(Some(Color::Green))
             } else {
                 t!("enabled_no").cell().foreground_color(Some(Color::Red))
             },
@@ -307,48 +309,57 @@ fn get_pci_profiles_from_url() -> Result<Vec<CfhdbPciProfile>, std::io::Error> {
                 .as_str()
                 .unwrap_or(&t!("unknown"))
                 .to_string();
-            let class_ids: Vec<String> = profile["class_ids"]
-                .as_array()
-                .expect("invalid_usb_profile_class_ids")
-                .into_iter()
-                .map(|x| x.as_str().unwrap_or_default().to_string())
-                .collect();
-            let vendor_ids: Vec<String> = profile["vendor_ids"]
-                .as_array()
-                .expect("invalid_usb_profile_class_ids")
-                .into_iter()
-                .map(|x| x.as_str().unwrap_or_default().to_string())
-                .collect();
-            let device_ids: Vec<String> = profile["device_ids"]
-                .as_array()
-                .expect("invalid_usb_profile_class_ids")
-                .into_iter()
-                .map(|x| x.as_str().unwrap_or_default().to_string())
-                .collect();
-            let blacklisted_class_ids: Vec<String> = profile["blacklisted_class_ids"]
-                .as_array()
-                .expect("invalid_usb_profile_class_ids")
-                .into_iter()
-                .map(|x| x.as_str().unwrap_or_default().to_string())
-                .collect();
-            let blacklisted_vendor_ids: Vec<String> = profile["blacklisted_vendor_ids"]
-                .as_array()
-                .expect("invalid_usb_profile_class_ids")
-                .into_iter()
-                .map(|x| x.as_str().unwrap_or_default().to_string())
-                .collect();
-            let blacklisted_device_ids: Vec<String> = profile["blacklisted_device_ids"]
-                .as_array()
-                .expect("invalid_usb_profile_class_ids")
-                .into_iter()
-                .map(|x| x.as_str().unwrap_or_default().to_string())
-                .collect();
+            let class_ids: Vec<String> = match profile["class_ids"].as_array() {
+                Some(t) => t
+                    .into_iter()
+                    .map(|x| x.as_str().unwrap_or_default().to_string())
+                    .collect(),
+                None => vec![],
+            };
+            let vendor_ids: Vec<String> = match profile["vendor_ids"].as_array() {
+                Some(t) => t
+                    .into_iter()
+                    .map(|x| x.as_str().unwrap_or_default().to_string())
+                    .collect(),
+                None => vec![],
+            };
+            let device_ids: Vec<String> = match profile["device_ids"].as_array() {
+                Some(t) => t
+                    .into_iter()
+                    .map(|x| x.as_str().unwrap_or_default().to_string())
+                    .collect(),
+                None => vec![],
+            };
+            let blacklisted_class_ids: Vec<String> =
+                match profile["blacklisted_class_ids"].as_array() {
+                    Some(t) => t
+                        .into_iter()
+                        .map(|x| x.as_str().unwrap_or_default().to_string())
+                        .collect(),
+                    None => vec![],
+                };
+            let blacklisted_vendor_ids: Vec<String> =
+                match profile["blacklisted_vendor_ids"].as_array() {
+                    Some(t) => t
+                        .into_iter()
+                        .map(|x| x.as_str().unwrap_or_default().to_string())
+                        .collect(),
+                    None => vec![],
+                };
+            let blacklisted_device_ids: Vec<String> =
+                match profile["blacklisted_device_ids"].as_array() {
+                    Some(t) => t
+                        .into_iter()
+                        .map(|x| x.as_str().unwrap_or_default().to_string())
+                        .collect(),
+                    None => vec![],
+                };
             let packages: Option<Vec<String>> = match profile["packages"].as_str() {
                 Some(_) => None,
                 None => Some(
                     profile["packages"]
                         .as_array()
-                        .expect("invalid_usb_profile_class_ids")
+                        .expect("invalid_pci_profile_json")
                         .into_iter()
                         .map(|x| x.as_str().unwrap_or_default().to_string())
                         .collect(),
