@@ -78,6 +78,10 @@ fn get_usb_profiles_from_url() -> Result<Vec<CfhdbUsbProfile>, std::io::Error> {
                 .as_str()
                 .unwrap_or("package-x-generic")
                 .to_string();
+            let license = profile["license"]
+                .as_str()
+                .unwrap_or(&t!("unknown"))
+                .to_string();
             let class_codes: Vec<String> = profile["class_codes"]
                 .as_array()
                 .expect("invalid_usb_profile_class_ids")
@@ -125,6 +129,10 @@ fn get_usb_profiles_from_url() -> Result<Vec<CfhdbUsbProfile>, std::io::Error> {
                         .collect(),
                 ),
             };
+            let check_script = profile["check_script"]
+                .as_str()
+                .unwrap_or("false")
+                .to_string();
             let install_script_value = profile["install_script"]
                 .as_str()
                 .unwrap_or_default()
@@ -149,6 +157,7 @@ fn get_usb_profiles_from_url() -> Result<Vec<CfhdbUsbProfile>, std::io::Error> {
                 codename,
                 i18n_desc,
                 icon_name,
+                license,
                 class_codes,
                 vendor_ids,
                 product_ids,
@@ -156,6 +165,7 @@ fn get_usb_profiles_from_url() -> Result<Vec<CfhdbUsbProfile>, std::io::Error> {
                 blacklisted_vendor_ids,
                 blacklisted_product_ids,
                 packages,
+                check_script,
                 install_script,
                 remove_script,
                 experimental,

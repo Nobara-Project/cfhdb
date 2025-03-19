@@ -86,6 +86,7 @@ fn display_pci_profiles_print_cli_table(target: &CfhdbPciDevice) {
     profiles.sort_by_key(|k| k.priority);
     for profile in profiles {
         let profile = profile.deref().clone();
+        let profile_check_status = duct::cmd!("false").run().is_ok();
         let cell_table = vec![
             profile.codename.cell(),
             match profile.i18n_desc.char_indices().nth(36) {
@@ -93,11 +94,17 @@ fn display_pci_profiles_print_cli_table(target: &CfhdbPciDevice) {
                 Some((idx, _)) => profile.i18n_desc[..idx].to_string() + "...",
             }
             .cell(),
+            profile.license.cell(),
             profile.priority.cell(),
             if profile.experimental {
                 t!("enabled_yes").cell().foreground_color(Some(Color::Red))
             } else {
                 t!("enabled_no").cell().foreground_color(Some(Color::Green))
+            },
+            if profile_check_status {
+                t!("enabled_yes").cell().foreground_color(Some(Color::Green))
+            } else {
+                t!("enabled_no").cell().foreground_color(Some(Color::Red))
             },
         ];
         table_struct.push(cell_table);
@@ -107,8 +114,10 @@ fn display_pci_profiles_print_cli_table(target: &CfhdbPciDevice) {
         .title(vec![
             t!("pci_table_profile_codename").cell().bold(true),
             t!("pci_table_name_i18n_desc").cell().bold(true),
+            t!("pci_table_name_license").cell().bold(true),
             t!("pci_table_name_priority").cell().bold(true),
             t!("pci_table_name_experimental").cell().bold(true),
+            t!("pci_table_name_installed").cell().bold(true),
         ])
         .bold(true);
 
@@ -294,6 +303,10 @@ fn get_pci_profiles_from_url() -> Result<Vec<CfhdbPciProfile>, std::io::Error> {
                 .as_str()
                 .unwrap_or("package-x-generic")
                 .to_string();
+            let license = profile["license"]
+                .as_str()
+                .unwrap_or(&t!("unknown"))
+                .to_string();
             let class_ids: Vec<String> = profile["class_ids"]
                 .as_array()
                 .expect("invalid_usb_profile_class_ids")
@@ -341,6 +354,10 @@ fn get_pci_profiles_from_url() -> Result<Vec<CfhdbPciProfile>, std::io::Error> {
                         .collect(),
                 ),
             };
+            let check_script = profile["check_script"]
+                .as_str()
+                .unwrap_or("false")
+                .to_string();
             let install_script_value = profile["install_script"]
                 .as_str()
                 .unwrap_or_default()
@@ -365,6 +382,7 @@ fn get_pci_profiles_from_url() -> Result<Vec<CfhdbPciProfile>, std::io::Error> {
                 codename,
                 i18n_desc,
                 icon_name,
+                license,
                 class_ids,
                 vendor_ids,
                 device_ids,
@@ -372,6 +390,7 @@ fn get_pci_profiles_from_url() -> Result<Vec<CfhdbPciProfile>, std::io::Error> {
                 blacklisted_vendor_ids,
                 blacklisted_device_ids,
                 packages,
+                check_script,
                 install_script,
                 remove_script,
                 experimental,
