@@ -220,15 +220,17 @@ pub struct CfhdbPciProfile {
 impl CfhdbPciProfile {
     pub fn get_status(&self) -> bool {
         let file_path = "/var/cache/cfhdb/check_cmd.sh";
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(file_path).expect(&(file_path.to_string() + "cannot be read"));
-        file.write_all(format!("#! /bin/bash \n {}", self.check_script).as_bytes()).expect(&(file_path.to_string() + "cannot be written to"));
-        let mut perms = file.metadata().expect(&(file_path.to_string() + "cannot be read")).permissions();
-        perms.set_mode(0o755);
-        fs::set_permissions(file_path, perms).expect(&(file_path.to_string() + "cannot be written to"));;
-        duct::cmd!(file_path).run().is_ok()
+        {
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .open(file_path).expect(&(file_path.to_string() + "cannot be read"));
+            file.write_all(format!("#! /bin/bash\nset -e\n{}", self.check_script).as_bytes()).expect(&(file_path.to_string() + "cannot be written to"));
+            let mut perms = file.metadata().expect(&(file_path.to_string() + "cannot be read")).permissions();
+            perms.set_mode(0o755);
+            fs::set_permissions(file_path, perms).expect(&(file_path.to_string() + "cannot be written to"));
+        }
+        duct::cmd!("bash", "-c", file_path).run().is_ok()
     }
 }
