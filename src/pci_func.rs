@@ -413,11 +413,7 @@ pub fn uninstall_pci_profile(profile_codename: &str) {
                                 fs::remove_file(file_fs_path).unwrap();
                             }
                             Err(_) => {
-                                eprintln!(
-                                    "[{}] {}",
-                                    t!("error").red(),
-                                    t!("remove_script_failed")
-                                );
+                                eprintln!("[{}] {}", t!("error").red(), t!("remove_script_failed"));
                                 fs::remove_file(file_fs_path).unwrap();
                                 exit(1);
                             }

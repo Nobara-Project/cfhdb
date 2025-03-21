@@ -183,5 +183,12 @@
     "pci_class_name_1120": "Management cards",
     "pci_class_name_1180": "Other data acquisition/signal processing controllers",
     "pci_class_name_1200": "Processing Accelerators",
-    "pci_class_name_1300": "Non-Essential Instrumentation Function controllers"
+    "pci_class_name_1300": "Non-Essential Instrumentation Function controllers",
+    "usb_table_manufacturer_string_index": "Manufacturer",
+    "usb_table_product_string_index": "Product",
+    "usb_table_sysfs_bus_id": "Sysfs Bus ID",
+    "usb_table_speed": "Speed",
+    "usb_table_driver": "Driver",
+    "usb_table_started": "Started",
+    "usb_table_enabled": "Enabled"
 }

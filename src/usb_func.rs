@@ -24,13 +24,14 @@ fn display_usb_devices_print_cli_table(hashmap: HashMap<String, Vec<CfhdbUsbDevi
                     None => device.manufacturer_string_index,
                     Some((idx, _)) => device.manufacturer_string_index[..idx].to_string() + "...",
                 }
-                    .cell(),
+                .cell(),
                 match device.product_string_index.char_indices().nth(36) {
                     None => device.product_string_index,
                     Some((idx, _)) => device.product_string_index[..idx].to_string() + "...",
                 }
-                    .cell(),
+                .cell(),
                 device.sysfs_busid.cell(),
+                device.speed.cell(),
                 match device.kernel_driver.as_str() {
                     "Unknown" => t!("unknown")
                         .to_string()
@@ -38,7 +39,6 @@ fn display_usb_devices_print_cli_table(hashmap: HashMap<String, Vec<CfhdbUsbDevi
                         .foreground_color(Some(Color::Yellow)),
                     _ => device.kernel_driver.cell(),
                 },
-                device.speed.cell(),
                 match device.started {
                     Some(t) => {
                         if t {
@@ -107,7 +107,7 @@ fn display_usb_profiles_print_cli_table(target: &CfhdbUsbDevice) {
                 None => profile.i18n_desc,
                 Some((idx, _)) => profile.i18n_desc[..idx].to_string() + "...",
             }
-                .cell(),
+            .cell(),
             profile.license.cell(),
             profile.priority.cell(),
             if profile.experimental {
@@ -415,11 +415,7 @@ pub fn uninstall_usb_profile(profile_codename: &str) {
                                 fs::remove_file(file_fs_path).unwrap();
                             }
                             Err(_) => {
-                                eprintln!(
-                                    "[{}] {}",
-                                    t!("error").red(),
-                                    t!("remove_script_failed")
-                                );
+                                eprintln!("[{}] {}", t!("error").red(), t!("remove_script_failed"));
                                 fs::remove_file(file_fs_path).unwrap();
                                 exit(1);
                             }
@@ -590,53 +586,50 @@ fn get_usb_profiles_from_url() -> Result<Vec<CfhdbUsbProfile>, std::io::Error> {
                 .unwrap_or(&t!("unknown"))
                 .to_string();
             let class_codes: Vec<String> = match profile["class_codes"].as_array() {
-                Some(t) => {
-                    t.into_iter()
-                        .map(|x| x.as_str().unwrap_or_default().to_string())
-                        .collect()
-                }
+                Some(t) => t
+                    .into_iter()
+                    .map(|x| x.as_str().unwrap_or_default().to_string())
+                    .collect(),
                 None => vec![],
             };
             let vendor_ids: Vec<String> = match profile["vendor_ids"].as_array() {
-                Some(t) => {
-                    t.into_iter()
-                        .map(|x| x.as_str().unwrap_or_default().to_string())
-                        .collect()
-                }
+                Some(t) => t
+                    .into_iter()
+                    .map(|x| x.as_str().unwrap_or_default().to_string())
+                    .collect(),
                 None => vec![],
             };
             let product_ids: Vec<String> = match profile["product_ids"].as_array() {
-                Some(t) => {
-                    t.into_iter()
-                        .map(|x| x.as_str().unwrap_or_default().to_string())
-                        .collect()
-                }
+                Some(t) => t
+                    .into_iter()
+                    .map(|x| x.as_str().unwrap_or_default().to_string())
+                    .collect(),
                 None => vec![],
             };
-            let blacklisted_class_codes: Vec<String> = match profile["blacklisted_class_codes"].as_array() {
-                Some(t) => {
-                    t.into_iter()
+            let blacklisted_class_codes: Vec<String> =
+                match profile["blacklisted_class_codes"].as_array() {
+                    Some(t) => t
+                        .into_iter()
                         .map(|x| x.as_str().unwrap_or_default().to_string())
-                        .collect()
-                }
-                None => vec![],
-            };
-            let blacklisted_vendor_ids: Vec<String> = match profile["blacklisted_vendor_ids"].as_array() {
-                Some(t) => {
-                    t.into_iter()
+                        .collect(),
+                    None => vec![],
+                };
+            let blacklisted_vendor_ids: Vec<String> =
+                match profile["blacklisted_vendor_ids"].as_array() {
+                    Some(t) => t
+                        .into_iter()
                         .map(|x| x.as_str().unwrap_or_default().to_string())
-                        .collect()
-                }
-                None => vec![],
-            };
-            let blacklisted_product_ids: Vec<String> = match profile["blacklisted_product_ids"].as_array() {
-                Some(t) => {
-                    t.into_iter()
+                        .collect(),
+                    None => vec![],
+                };
+            let blacklisted_product_ids: Vec<String> =
+                match profile["blacklisted_product_ids"].as_array() {
+                    Some(t) => t
+                        .into_iter()
                         .map(|x| x.as_str().unwrap_or_default().to_string())
-                        .collect()
-                }
-                None => vec![],
-            };
+                        .collect(),
+                    None => vec![],
+                };
             let packages: Option<Vec<String>> = match profile["packages"].as_str() {
                 Some(_) => None,
                 None => Some(

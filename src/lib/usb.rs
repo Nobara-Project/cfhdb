@@ -20,8 +20,8 @@ use users::get_current_username;
 pub struct ProfileWrapper(pub Rc<RefCell<Option<Vec<Rc<CfhdbUsbProfile>>>>>);
 impl Serialize for ProfileWrapper {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         // Borrow the RefCell
         let borrowed = self.0.borrow();
@@ -93,9 +93,8 @@ impl CfhdbUsbDevice {
     }
 
     fn get_kernel_driver(busid: &str) -> Option<String> {
-        let device_driver_path = std::path::Path::new("/sys/bus/usb/devices")
-            .join(busid)
-            .join("driver");
+        let device_driver_format = format!("/sys/bus/usb/devices/{}:1.0/driver", busid);
+        let device_driver_path = std::path::Path::new(&device_driver_format);
         if device_driver_path.exists() {
             std::fs::read_link(device_driver_path)
                 .ok()
@@ -105,32 +104,40 @@ impl CfhdbUsbDevice {
         }
     }
 
-    fn get_manufacturer(busid: &str) -> Result<String, std::io::Error> {
+    fn get_serial(busid: &str) -> Result<String, std::io::Error> {
         let device_manufacturer_path = std::path::Path::new("/sys/bus/usb/devices")
             .join(busid)
-            .join("manufacturer");
+            .join("serial");
         if device_manufacturer_path.exists() {
             std::fs::read_to_string(device_manufacturer_path)
         } else {
             Err(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
-                "Manufacturer file could not be found!",
+                "serial file could not be found!",
             ))
         }
     }
 
-    fn get_product(busid: &str) -> Result<String, std::io::Error> {
-        let device_product_path = std::path::Path::new("/sys/bus/usb/devices")
-            .join(busid)
-            .join("product");
-        if device_product_path.exists() {
-            std::fs::read_to_string(device_product_path)
-        } else {
-            Err(std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                "Product file could not be found!",
-            ))
+    fn parse_from_lsusb_output(vendor_id: &str, product_id: &str) -> Option<(String, String)> {
+        let output = std::process::Command::new("lsusb")
+            .output()
+            .expect("Failed to execute lsusb");
+        let stdout = std::str::from_utf8(&output.stdout).expect("Invalid UTF-8 in lsusb output");
+        for line in stdout.lines() {
+            if line.contains(&format!("ID {}:{}", vendor_id, product_id)) {
+                let parts: Vec<&str> = line.split("ID ").collect();
+                if parts.len() > 1 {
+                    let description = parts[1].trim();
+                    let details: Vec<&str> = description.splitn(3, ' ').collect();
+                    if details.len() >= 3 {
+                        let manufacturer = details[1].to_string();
+                        let product_name = details[2..].join(" ").to_string();
+                        return Some((manufacturer, product_name));
+                    }
+                }
+            }
         }
+        None
     }
 
     pub fn set_available_profiles(profile_data: &[CfhdbUsbProfile], device: &Self) {
@@ -165,12 +172,10 @@ impl CfhdbUsbDevice {
         }
     }
 
-    fn get_started(busid: &str) -> Result<bool, std::io::Error> {
-        let device_enable_path = std::path::Path::new("/sys/bus/usb/devices")
-            .join(busid)
-            .join("enable");
-        let enable_status = std::fs::read_to_string(&device_enable_path)?;
-        Ok(enable_status.trim() == "1")
+    fn get_started(busid: &str) -> bool {
+        let device_driver_format = format!("/sys/bus/usb/devices/{}:1.0/driver", busid);
+        let device_driver_path = std::path::Path::new(&device_driver_format);
+        device_driver_path.exists()
     }
 
     fn get_enabled(busid: &str) -> bool {
@@ -195,7 +200,7 @@ impl CfhdbUsbDevice {
     }
 
     fn get_modinfo_name(busid: &str) -> Result<String, std::io::Error> {
-        let modalias = fs::read_to_string(format!("/sys/bus/usb/devices/{}/modalias", busid))?;
+        let modalias = fs::read_to_string(format!("/sys/bus/usb/devices/{}:1.0/modalias", busid))?;
         let modinfo_cmd = duct::cmd!("modinfo", modalias);
         let stdout = modinfo_cmd.read()?;
         let re = Regex::new(r"name:\s+(\w+)").unwrap();
@@ -330,34 +335,31 @@ impl CfhdbUsbDevice {
             let item_address = iter.address();
             let item_sysfs_busid =
                 Self::get_sysfs_id(item_bus_number, item_address).unwrap_or("???".to_owned()); //format!("{}-{}-{}", iter.bus_number(), iter.port_number(), iter.address());
-
+            let item_vendor_id = from_hex(device_descriptor.vendor_id() as _, 4);
+            let item_product_id = from_hex(device_descriptor.product_id() as _, 4);
             let item_class_name = "".to_owned();
-            let item_manufacturer_string_index = match Self::get_manufacturer(&item_sysfs_busid) {
-                Ok(t) => t.trim().to_string(),
-                Err(_) => "???".to_owned(),
-            };
-            let item_product_string_index = match Self::get_product(&item_sysfs_busid) {
-                Ok(t) => t.trim().to_string(),
-                Err(_) => "???".to_owned(),
+            let (item_manufacturer_string_index, item_product_string_index) = match Self::parse_from_lsusb_output(&item_vendor_id, &item_product_id) {
+                Some(t) => {
+                    (t.0,t.1)
+                }
+                None => {("???".to_owned(), "???".to_owned())}
             };
             let item_started = Self::get_started(&item_sysfs_busid);
             let item_enabled = Self::get_enabled(&item_sysfs_busid);
             let item_serial_number_string_index = "".to_owned();
             let item_protocol_code = from_hex(device_descriptor.protocol_code() as _, 4);
             let item_class_code = from_hex(device_descriptor.class_code() as _, 4).to_uppercase();
-            let item_vendor_id = from_hex(device_descriptor.vendor_id() as _, 4);
-            let item_product_id = from_hex(device_descriptor.product_id() as _, 4);
             let item_usb_version = device_descriptor.usb_version().to_string();
             let item_port_number = iter.port_number();
             let item_kernel_driver =
                 Self::get_kernel_driver(&item_sysfs_busid).unwrap_or("Unknown".to_string());
             let item_speed = match iter.speed() {
                 rusb::Speed::Low => "1.0",
-                rusb::Speed::Full=> "1.1",
+                rusb::Speed::Full => "1.1",
                 rusb::Speed::High => "2.0",
-                rusb::Speed::Super=> "3.0",
-                rusb::Speed::SuperPlus=> "3.1",
-                _ => "Unknown"
+                rusb::Speed::Super => "3.0",
+                rusb::Speed::SuperPlus => "3.1",
+                _ => "Unknown",
             };
             let item_vendor_icon_name = "".to_owned();
 
@@ -376,15 +378,10 @@ impl CfhdbUsbDevice {
                 port_number: item_port_number,
                 address: item_address,
                 kernel_driver: item_kernel_driver.clone(),
-                started: match item_started {
-                    Ok(t) => {
-                        if item_kernel_driver != "Unknown" {
-                            Some(t)
-                        } else {
-                            None
-                        }
-                    }
-                    Err(_) => None,
+                started: if item_kernel_driver != "Unknown" {
+                    Some(item_started)
+                } else {
+                    None
                 },
                 enabled: item_enabled,
                 speed: item_speed.to_string(),
@@ -469,9 +466,9 @@ impl CfhdbUsbProfile {
                     "#! /bin/bash\nset -e\n{} > /dev/null 2>&1",
                     self.check_script
                 )
-                    .as_bytes(),
+                .as_bytes(),
             )
-                .expect(&(file_path.to_string() + "cannot be written to"));
+            .expect(&(file_path.to_string() + "cannot be written to"));
             let mut perms = file
                 .metadata()
                 .expect(&(file_path.to_string() + "cannot be read"))
@@ -483,4 +480,3 @@ impl CfhdbUsbProfile {
         duct::cmd!("bash", "-c", file_path).run().is_ok()
     }
 }
-

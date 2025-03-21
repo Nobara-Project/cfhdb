@@ -9,8 +9,10 @@ sysfs_remove_history="/tmp/cfhdb_sysfs_remove_history"
 if [[ "$2" == "pci" ]]
 then
   blacklist_file_path=$pci_blacklist_file_path
+  target_arg3="${3}"
 else
   blacklist_file_path=$usb_blacklist_file_path
+  target_arg3="${3}:1.0"
 fi
 
 start_device () {
@@ -18,7 +20,7 @@ start_device () {
   then
     DRIVER_NAME=$(grep "^$2 " "$sysfs_remove_history" | awk '{print $2}')
     if [ -z "$DRIVER_NAME" ]; then
-      echo "$2" > /sys/bus/"$1"/drivers/"$3"/bind
+      echo "$2" > /sys/bus/"$1"/drivers/"$target_arg3"/bind
       exit 1
     else
       echo "$2" > /sys/bus/"$1"/drivers/"$DRIVER_NAME"/bind
@@ -75,15 +77,15 @@ disable_device () {
 
 case "$1" in
     start_device)
-        start_device "$2" "$3" "$4"
+        start_device "$2" "$target_arg3" "$4"
         ;;
     stop_device)
-        stop_device "$2" "$3"
+        stop_device "$2" "$target_arg3"
         ;;
     enable_device)
-        enable_device "$2" "$3"
+        enable_device "$2" "$target_arg3"
         ;;
     disable_device)
-        disable_device "$2" "$3"
+        disable_device "$2" "$target_arg3"
         ;;
 esac
