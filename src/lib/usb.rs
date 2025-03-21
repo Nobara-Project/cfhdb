@@ -109,7 +109,13 @@ impl CfhdbUsbDevice {
             .join(busid)
             .join("serial");
         if device_manufacturer_path.exists() {
-            std::fs::read_to_string(device_manufacturer_path)
+            match std::fs::read_to_string(device_manufacturer_path) {
+                Ok(t) => Ok(t.trim().to_string()),
+                Err(e) =>             Err(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    e
+                ))
+            }
         } else {
             Err(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
@@ -346,7 +352,7 @@ impl CfhdbUsbDevice {
             };
             let item_started = Self::get_started(&item_sysfs_busid);
             let item_enabled = Self::get_enabled(&item_sysfs_busid);
-            let item_serial_number_string_index = "".to_owned();
+            let item_serial_number_string_index = Self::get_serial(&item_sysfs_busid).unwrap_or("Unknown".to_string());
             let item_protocol_code = from_hex(device_descriptor.protocol_code() as _, 4);
             let item_class_code = from_hex(device_descriptor.class_code() as _, 4).to_uppercase();
             let item_usb_version = device_descriptor.usb_version().to_string();
