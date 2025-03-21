@@ -246,7 +246,7 @@ pub fn install_pci_profile(profile_codename: &str) {
                                     t!("error").red(),
                                     t!("package_installation_failed")
                                 );
-                                exit(1);
+                                //exit(1);
                             }
                         }
                     }
