@@ -317,7 +317,125 @@ pub fn install_pci_profile(profile_codename: &str) {
     }
 }
 pub fn uninstall_pci_profile(profile_codename: &str) {
-    todo!()
+    let profiles = match get_pci_profiles_from_url() {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("[{}] {}", t!("error").red(), e);
+            exit(1);
+        }
+    };
+    match CfhdbPciProfile::get_profile_from_codename(profile_codename, profiles) {
+        Ok(target_profile) => {
+            if !target_profile.get_status() {
+                println!(
+                    "[{}] {}",
+                    t!("info").bright_green(),
+                    t!("profile_not_installed")
+                );
+            } else {
+                match target_profile.packages {
+                    Some(t) => {
+                        let package_list = t.join(" ");
+                        match duct::cmd!("pikman", "purge", package_list).run() {
+                            Ok(_) => {
+                                match duct::cmd!("pikman", "purge").run() {
+                                    Ok(_) => {
+                                        println!(
+                                            "[{}] {}",
+                                            t!("info").bright_green(),
+                                            t!("package_removal_successful")
+                                        );
+                                    }
+                                    Err(_) => {
+                                        eprintln!(
+                                            "[{}] {}",
+                                            t!("error").red(),
+                                            t!("package_removal_failed")
+                                        );
+                                        exit(1);
+                                    }
+                                }
+                                println!(
+                                    "[{}] {}",
+                                    t!("info").bright_green(),
+                                    t!("package_removal_successful")
+                                );
+                            }
+                            Err(_) => {
+                                eprintln!(
+                                    "[{}] {}",
+                                    t!("error").red(),
+                                    t!("package_removal_failed")
+                                );
+                                exit(1);
+                            }
+                        }
+                    }
+                    None => {}
+                }
+
+                match target_profile.remove_script {
+                    Some(t) => {
+                        let file_path = "/var/cache/cfhdb/script_lock.sh";
+                        let file_fs_path = Path::new(file_path);
+                        if file_fs_path.exists() {
+                            fs::remove_file(file_fs_path).unwrap();
+                        }
+                        {
+                            let mut file = std::fs::OpenOptions::new()
+                                .write(true)
+                                .create(true)
+                                .truncate(true)
+                                .open(file_path)
+                                .expect(&(file_path.to_string() + "cannot be read"));
+                            file.write_all(format!("#! /bin/bash\nset -e\n{}", t).as_bytes())
+                                .expect(&(file_path.to_string() + "cannot be written to"));
+                            let mut perms = file
+                                .metadata()
+                                .expect(&(file_path.to_string() + "cannot be read"))
+                                .permissions();
+                            perms.set_mode(0o777);
+                            fs::set_permissions(file_path, perms)
+                                .expect(&(file_path.to_string() + "cannot be written to"));
+                        }
+                        let final_cmd = if get_current_username().unwrap() == "root" {
+                            duct::cmd!(file_path)
+                        } else {
+                            duct::cmd!("pkexec", file_path)
+                        };
+                        match final_cmd.run() {
+                            Ok(_) => {
+                                println!(
+                                    "[{}] {}",
+                                    t!("info").bright_green(),
+                                    t!("remove_script_successful")
+                                );
+                                fs::remove_file(file_fs_path).unwrap();
+                            }
+                            Err(_) => {
+                                eprintln!(
+                                    "[{}] {}",
+                                    t!("error").red(),
+                                    t!("remove_script_failed")
+                                );
+                                fs::remove_file(file_fs_path).unwrap();
+                                exit(1);
+                            }
+                        }
+                    }
+                    None => {}
+                }
+            }
+        }
+        Err(_) => {
+            eprintln!(
+                "[{}] {}",
+                t!("error").red(),
+                t!("no_matching_profile_codename")
+            );
+            exit(1);
+        }
+    }
 }
 
 pub fn enable_pci_device(target_sysfs_id: &str) {

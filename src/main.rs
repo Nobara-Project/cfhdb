@@ -262,7 +262,7 @@ fn parse_args(args: Vec<String>) {
                 pci_func::install_pci_profile(&additional_arguments[1]);
             }
         }
-        "uup" => {
+        "upp" => {
             if additional_arguments.len() < 2 {
                 eprintln!("{}", t!("no_profile_specified"));
                 std::process::exit(1);
