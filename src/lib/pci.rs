@@ -1,3 +1,5 @@
+use regex::Regex;
+use rust_i18n::t;
 use serde::Serialize;
 use serde::Serializer;
 use std::cell::RefCell;
@@ -5,13 +7,12 @@ use std::collections::HashMap;
 use std::fmt::format;
 use std::fs::File;
 use std::fs::{self, OpenOptions};
-use std::io::{ErrorKind, Write};
 use std::io::{self, BufRead};
+use std::io::{ErrorKind, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::process::exit;
 use std::rc::Rc;
-use regex::Regex;
-use rust_i18n::t;
+use users::get_current_username;
 
 // Implement Serialize for Rc<RefCell<Option<Vec<Rc<CfhdbPciProfile>>>>>
 
@@ -154,22 +155,88 @@ impl CfhdbPciDevice {
     }
 
     pub fn stop_device(&self) -> Result<(), std::io::Error> {
-        duct::cmd!("pkexec", "/usr/lib/cfhdb/scripts/sysfs_helper.sh", "stop_device", "pci", &self.sysfs_busid).run()?;
+        let cmd = if get_current_username().unwrap() == "root" {
+            duct::cmd!(
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "stop_device",
+                "pci",
+                &self.sysfs_busid
+            )
+        } else {
+            duct::cmd!(
+                "pkexec",
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "stop_device",
+                "pci",
+                &self.sysfs_busid
+            )
+        };
+        cmd.run()?;
         Ok(())
     }
 
     pub fn start_device(&self) -> Result<(), std::io::Error> {
-        duct::cmd!("pkexec", "/usr/lib/cfhdb/scripts/sysfs_helper.sh", "start_device", "pci", &self.sysfs_busid, Self::get_modinfo_name(&self.sysfs_busid).unwrap_or("".to_string())).run()?;
+        let cmd = if get_current_username().unwrap() == "root" {
+            duct::cmd!(
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "start_device",
+                "pci",
+                &self.sysfs_busid,
+                Self::get_modinfo_name(&self.sysfs_busid).unwrap_or("".to_string())
+            )
+        } else {
+            duct::cmd!(
+                "pkexec",
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "start_device",
+                "pci",
+                &self.sysfs_busid,
+                Self::get_modinfo_name(&self.sysfs_busid).unwrap_or("".to_string())
+            )
+        };
+        cmd.run()?;
         Ok(())
     }
 
     pub fn enable_device(&self) -> Result<(), std::io::Error> {
-        duct::cmd!("pkexec", "/usr/lib/cfhdb/scripts/sysfs_helper.sh", "enable_device", "pci", &self.sysfs_busid).run()?;
+        let cmd = if get_current_username().unwrap() == "root" {
+            duct::cmd!(
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "enable_device",
+                "pci",
+                &self.sysfs_busid
+            )
+        } else {
+            duct::cmd!(
+                "pkexec",
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "enable_device",
+                "pci",
+                &self.sysfs_busid
+            )
+        };
+        cmd.run()?;
         Ok(())
     }
 
     pub fn disable_device(&self) -> Result<(), std::io::Error> {
-        duct::cmd!("pkexec", "/usr/lib/cfhdb/scripts/sysfs_helper.sh", "disable_device", "pci", &self.sysfs_busid).run()?;
+        let cmd = if get_current_username().unwrap() == "root" {
+            duct::cmd!(
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "disable_device",
+                "pci",
+                &self.sysfs_busid
+            )
+        } else {
+            duct::cmd!(
+                "pkexec",
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "disable_device",
+                "pci",
+                &self.sysfs_busid
+            )
+        };
+        cmd.run()?;
         Ok(())
     }
 
@@ -177,16 +244,18 @@ impl CfhdbPciDevice {
         let devices = match CfhdbPciDevice::get_devices() {
             Some(t) => t,
             None => {
-                return Err(std::io::Error::new(ErrorKind::InvalidData, "Could not get pci devices"));
+                return Err(std::io::Error::new(
+                    ErrorKind::InvalidData,
+                    "Could not get pci devices",
+                ));
             }
         };
         match devices.iter().find(|x| x.sysfs_busid == busid) {
-            Some(device) => {
-                Ok(device.clone())
-            }
-            None => {
-                Err(std::io::Error::new(ErrorKind::NotFound, "no pci device with matching busid"))
-            }
+            Some(device) => Ok(device.clone()),
+            None => Err(std::io::Error::new(
+                ErrorKind::NotFound,
+                "no pci device with matching busid",
+            )),
         }
     }
 
@@ -301,14 +370,16 @@ pub struct CfhdbPciProfile {
 }
 
 impl CfhdbPciProfile {
-    pub fn get_profile_from_codename(codename: &str, profiles: Vec<CfhdbPciProfile>) -> Result<Self, std::io::Error> {
+    pub fn get_profile_from_codename(
+        codename: &str,
+        profiles: Vec<CfhdbPciProfile>,
+    ) -> Result<Self, std::io::Error> {
         match profiles.iter().find(|x| x.codename == codename) {
-            Some(profile) => {
-                Ok(profile.clone())
-            }
-            None => {
-                Err(std::io::Error::new(ErrorKind::NotFound, "no pci profile with matching codename"))
-            }
+            Some(profile) => Ok(profile.clone()),
+            None => Err(std::io::Error::new(
+                ErrorKind::NotFound,
+                "no pci profile with matching codename",
+            )),
         }
     }
 
@@ -321,13 +392,19 @@ impl CfhdbPciProfile {
                 .truncate(true)
                 .open(file_path)
                 .expect(&(file_path.to_string() + "cannot be read"));
-            file.write_all(format!("#! /bin/bash\nset -e\n{} > /dev/null 2>&1", self.check_script).as_bytes())
-                .expect(&(file_path.to_string() + "cannot be written to"));
+            file.write_all(
+                format!(
+                    "#! /bin/bash\nset -e\n{} > /dev/null 2>&1",
+                    self.check_script
+                )
+                .as_bytes(),
+            )
+            .expect(&(file_path.to_string() + "cannot be written to"));
             let mut perms = file
                 .metadata()
                 .expect(&(file_path.to_string() + "cannot be read"))
                 .permissions();
-            perms.set_mode(0o755);
+            perms.set_mode(0o777);
             fs::set_permissions(file_path, perms)
                 .expect(&(file_path.to_string() + "cannot be written to"));
         }

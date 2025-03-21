@@ -4,8 +4,12 @@ use colored::Colorize;
 use libcfhdb::pci::*;
 use std::collections::HashMap;
 use std::fs;
+use std::io::Write;
 use std::ops::Deref;
+use std::os::unix::fs::PermissionsExt;
+use std::path::Path;
 use std::process::exit;
+use users::get_current_username;
 
 fn display_pci_devices_print_json(hashmap: HashMap<String, Vec<CfhdbPciDevice>>) {
     let json_pretty = serde_json::to_string_pretty(&hashmap).unwrap();
@@ -202,11 +206,7 @@ pub fn display_pci_profiles(json: bool, target: &str) {
             }
         }
         Err(_) => {
-            eprintln!(
-                "[{}] {}",
-                t!("error").red(),
-                t!("no_matching_pci_device")
-            );
+            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_pci_device"));
             exit(1);
         }
     }
@@ -241,20 +241,76 @@ pub fn install_pci_profile(profile_codename: &str) {
                                 );
                             }
                             Err(_) => {
-                                eprintln!("[{}] {}", t!("error").red(), t!("package_installation_failed"));
+                                eprintln!(
+                                    "[{}] {}",
+                                    t!("error").red(),
+                                    t!("package_installation_failed")
+                                );
                                 exit(1);
                             }
                         }
                     }
                     None => {}
                 }
-            };
+
+                match target_profile.install_script {
+                    Some(t) => {
+                        let file_path = "/var/cache/cfhdb/script_lock.sh";
+                        let file_fs_path = Path::new(file_path);
+                        if file_fs_path.exists() {
+                            fs::remove_file(file_fs_path).unwrap();
+                        }
+                        {
+                            let mut file = std::fs::OpenOptions::new()
+                                .write(true)
+                                .create(true)
+                                .truncate(true)
+                                .open(file_path)
+                                .expect(&(file_path.to_string() + "cannot be read"));
+                            file.write_all(format!("#! /bin/bash\nset -e\n{}", t).as_bytes())
+                                .expect(&(file_path.to_string() + "cannot be written to"));
+                            let mut perms = file
+                                .metadata()
+                                .expect(&(file_path.to_string() + "cannot be read"))
+                                .permissions();
+                            perms.set_mode(0o777);
+                            fs::set_permissions(file_path, perms)
+                                .expect(&(file_path.to_string() + "cannot be written to"));
+                        }
+                        let final_cmd = if get_current_username().unwrap() == "root" {
+                            duct::cmd!(file_path)
+                        } else {
+                            duct::cmd!("pkexec", file_path)
+                        };
+                        match final_cmd.run() {
+                            Ok(_) => {
+                                println!(
+                                    "[{}] {}",
+                                    t!("info").bright_green(),
+                                    t!("install_script_successful")
+                                );
+                                fs::remove_file(file_fs_path).unwrap();
+                            }
+                            Err(_) => {
+                                eprintln!(
+                                    "[{}] {}",
+                                    t!("error").red(),
+                                    t!("install_script_failed")
+                                );
+                                fs::remove_file(file_fs_path).unwrap();
+                                exit(1);
+                            }
+                        }
+                    }
+                    None => {}
+                }
+            }
         }
         Err(_) => {
             eprintln!(
                 "[{}] {}",
                 t!("error").red(),
-                t!("no_matching_pci_device")
+                t!("no_matching_profile_codename")
             );
             exit(1);
         }
@@ -276,11 +332,7 @@ pub fn enable_pci_device(target_sysfs_id: &str) {
             };
         }
         Err(_) => {
-            eprintln!(
-                "[{}] {}",
-                t!("error").red(),
-                t!("no_matching_pci_device")
-            );
+            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_pci_device"));
             exit(1);
         }
     }
@@ -297,11 +349,7 @@ pub fn disable_pci_device(target_sysfs_id: &str) {
             };
         }
         Err(_) => {
-            eprintln!(
-                "[{}] {}",
-                t!("error").red(),
-                t!("no_matching_pci_device")
-            );
+            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_pci_device"));
             exit(1);
         }
     }
@@ -319,11 +367,7 @@ pub fn start_pci_device(target_sysfs_id: &str) {
             };
         }
         Err(_) => {
-            eprintln!(
-                "[{}] {}",
-                t!("error").red(),
-                t!("no_matching_pci_device")
-            );
+            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_pci_device"));
             exit(1);
         }
     }
@@ -340,11 +384,7 @@ pub fn stop_pci_device(target_sysfs_id: &str) {
             };
         }
         Err(_) => {
-            eprintln!(
-                "[{}] {}",
-                t!("error").red(),
-                t!("no_matching_pci_device")
-            );
+            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_pci_device"));
             exit(1);
         }
     }
