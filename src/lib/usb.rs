@@ -147,8 +147,8 @@ impl CfhdbUsbDevice {
             }
         }
         match (current_vendor_id, current_product_id) {
-            (Some(a), Some(b)) => Some((a,b)),
-            (_,_) => None
+            (Some(a), Some(b)) => Some((a, b)),
+            (_, _) => None,
         }
     }
 
@@ -359,7 +359,8 @@ impl CfhdbUsbDevice {
             let item_serial_number_string_index =
                 Self::get_serial(&item_sysfs_busid).unwrap_or("Unknown".to_string());
             let item_protocol_code = from_hex(device_descriptor.protocol_code() as _, 4);
-            let item_class_code = from_hex(device_descriptor.class_code() as _, 4).to_uppercase();
+            //let item_class_code = (from_hex(device_descriptor.class_code() as _, 2) + &from_hex(device_descriptor.sub_class_code() as _, 2)).to_uppercase();
+            let item_class_code = (from_hex(device_descriptor.class_code() as _, 2)).to_uppercase();
             let item_usb_version = device_descriptor.usb_version().to_string();
             let item_port_number = iter.port_number();
             let item_kernel_driver =
