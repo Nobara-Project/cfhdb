@@ -21,6 +21,26 @@
         "priority": 10
       },
       {
+        "codename": "neofetch",
+        "i18n_desc": "Neofetch",
+        "i18n_desc[en_US]": "Neofetch",
+        "icon_name": "nvidia",
+        "license": "Proprietary",
+        "class_ids": ["*"],
+        "vendor_ids": ["*"],
+        "device_ids": ["*"],
+        "blacklisted_class_ids": [],
+        "blacklisted_vendor_ids": [],
+        "blacklisted_device_ids": [],
+        "packages": "Option::is_none",
+        "check_script": "false",
+        "install_script": "neofetch",
+        "remove_script": "Option::is_none",
+        "experimental": false,
+        "removable": true,
+        "priority": 10
+      },
+      {
         "codename": "nvidia-driver-565",
         "i18n_desc": "NVIDIA Graphics drivers (565) for Linux (Closed)",
         "i18n_desc[en_US]": "NVIDIA Graphics drivers (565) for Linux (Closed)",
