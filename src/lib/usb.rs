@@ -41,7 +41,6 @@ impl Serialize for ProfileWrapper {
 #[derive(Serialize, Debug, Clone)]
 pub struct CfhdbUsbDevice {
     // String identification
-    pub class_name: String,
     pub manufacturer_string_index: String,
     pub product_string_index: String,
     pub serial_number_string_index: String,
@@ -61,7 +60,6 @@ pub struct CfhdbUsbDevice {
     pub enabled: bool,
     pub speed: String,
     // Cfhdb Extras
-    pub vendor_icon_name: String,
     pub available_profiles: ProfileWrapper,
 }
 impl CfhdbUsbDevice {
@@ -343,7 +341,6 @@ impl CfhdbUsbDevice {
                 Self::get_sysfs_id(item_bus_number, item_address).unwrap_or("???".to_owned()); //format!("{}-{}-{}", iter.bus_number(), iter.port_number(), iter.address());
             let item_vendor_id = from_hex(device_descriptor.vendor_id() as _, 4);
             let item_product_id = from_hex(device_descriptor.product_id() as _, 4);
-            let item_class_name = "".to_owned();
             let (item_manufacturer_string_index, item_product_string_index) = match Self::parse_from_lsusb_output(&item_vendor_id, &item_product_id) {
                 Some(t) => {
                     (t.0,t.1)
@@ -367,10 +364,7 @@ impl CfhdbUsbDevice {
                 rusb::Speed::SuperPlus => "3.1",
                 _ => "Unknown",
             };
-            let item_vendor_icon_name = "".to_owned();
-
             devices.push(Self {
-                class_name: item_class_name,
                 manufacturer_string_index: item_manufacturer_string_index,
                 product_string_index: item_product_string_index,
                 serial_number_string_index: item_serial_number_string_index,
@@ -391,7 +385,6 @@ impl CfhdbUsbDevice {
                 },
                 enabled: item_enabled,
                 speed: item_speed.to_string(),
-                vendor_icon_name: item_vendor_icon_name,
                 available_profiles: ProfileWrapper(Rc::default()),
             });
         }

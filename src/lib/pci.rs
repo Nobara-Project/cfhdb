@@ -55,7 +55,6 @@ pub struct CfhdbPciDevice {
     pub sysfs_id: String,
     pub kernel_driver: String,
     // Cfhdb Extras
-    pub vendor_icon_name: String,
     pub available_profiles: ProfileWrapper,
 }
 
@@ -292,7 +291,6 @@ impl CfhdbPciDevice {
             let item_sysfs_id = "".to_owned();
             let item_kernel_driver =
                 Self::get_kernel_driver(&item_sysfs_busid).unwrap_or("Unknown".to_string());
-            let item_vendor_icon_name = "".to_owned();
 
             devices.push(Self {
                 class_name: item_class,
@@ -315,7 +313,6 @@ impl CfhdbPciDevice {
                 sysfs_busid: item_sysfs_busid,
                 sysfs_id: item_sysfs_id,
                 kernel_driver: item_kernel_driver,
-                vendor_icon_name: item_vendor_icon_name,
                 available_profiles: ProfileWrapper(Rc::default()),
             });
         }

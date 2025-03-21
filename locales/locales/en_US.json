@@ -190,5 +190,18 @@
     "usb_table_speed": "Speed",
     "usb_table_driver": "Driver",
     "usb_table_started": "Started",
-    "usb_table_enabled": "Enabled"
+    "usb_table_enabled": "Enabled",
+    "failed_to_get_usb_devices": "Scanning for USB devices failed!",
+    "no_matching_usb_device": "Could not find a usb device with this bus id",
+    "usb_download_starting": "Downloading USB profiles database.",
+    "usb_download_successful": "USB profiles database successfully downloaded, loading...",
+    "usb_download_failed": "USB profiles database could not be downloaded, attempting to fall back to cached database",
+    "usb_download_cache_found": "Local USB profiles database found, loading...",
+    "usb_download_cache_not_found": "Local USB database could not be found!",
+    "usb_table_profile_codename": "Codename",
+    "usb_table_name_i18n_desc": "Description",
+    "usb_table_name_license": "License",
+    "usb_table_name_priority": "Priority",
+    "usb_table_name_experimental": "Experimental",
+    "usb_table_name_installed": "Is Installed"
 }
