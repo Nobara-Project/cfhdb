@@ -54,6 +54,7 @@
     "pci_download_cache_found": "Local PCI profiles database found, loading...",
     "pci_download_cache_not_found": "Local PCI database could not be found!",
     "failed_to_get_pci_devices": "Scanning for PCI devices failed!",
+    "no_matching_pci_device": "Could not find a pci device with this bus id",
     "pci_class_name_0000": "Unclassified devices",
     "pci_class_name_0001": "Unclassified devices - VGA compatible",
     "pci_class_name_0100": "SCSI controllers",

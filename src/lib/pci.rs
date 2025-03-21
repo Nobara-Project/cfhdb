@@ -8,8 +8,10 @@ use std::fs::{self, OpenOptions};
 use std::io::{ErrorKind, Write};
 use std::io::{self, BufRead};
 use std::os::unix::fs::PermissionsExt;
+use std::process::exit;
 use std::rc::Rc;
 use regex::Regex;
+use rust_i18n::t;
 
 // Implement Serialize for Rc<RefCell<Option<Vec<Rc<CfhdbPciProfile>>>>>
 
@@ -151,8 +153,41 @@ impl CfhdbPciDevice {
         Err(std::io::Error::new(ErrorKind::NotFound, "not found"))
     }
 
-    pub fn stop_device(&self) {
+    pub fn stop_device(&self) -> Result<(), std::io::Error> {
+        duct::cmd!("pkexec", "/usr/lib/cfhdb/scripts/sysfs_helper.sh", "stop_device", "pci", &self.sysfs_busid).run()?;
+        Ok(())
+    }
 
+    pub fn start_device(&self) -> Result<(), std::io::Error> {
+        duct::cmd!("pkexec", "/usr/lib/cfhdb/scripts/sysfs_helper.sh", "start_device", "pci", &self.sysfs_busid, Self::get_modinfo_name(&self.sysfs_busid).unwrap_or("".to_string())).run()?;
+        Ok(())
+    }
+
+    pub fn enable_device(&self) -> Result<(), std::io::Error> {
+        duct::cmd!("pkexec", "/usr/lib/cfhdb/scripts/sysfs_helper.sh", "enable_device", "pci", &self.sysfs_busid).run()?;
+        Ok(())
+    }
+
+    pub fn disable_device(&self) -> Result<(), std::io::Error> {
+        duct::cmd!("pkexec", "/usr/lib/cfhdb/scripts/sysfs_helper.sh", "disable_device", "pci", &self.sysfs_busid).run()?;
+        Ok(())
+    }
+
+    pub fn get_device_from_busid(busid: &str) -> Result<CfhdbPciDevice, std::io::Error> {
+        let devices = match CfhdbPciDevice::get_devices() {
+            Some(t) => t,
+            None => {
+                return Err(std::io::Error::new(ErrorKind::InvalidData, "Could not get pci devices"));
+            }
+        };
+        match devices.iter().find(|x| x.sysfs_busid == busid) {
+            Some(device) => {
+                Ok(device.clone())
+            }
+            None => {
+                Err(std::io::Error::new(ErrorKind::NotFound, "no pci device with matching busid"))
+            }
+        }
     }
 
     pub fn get_devices() -> Option<Vec<Self>> {

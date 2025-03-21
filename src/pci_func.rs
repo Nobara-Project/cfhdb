@@ -168,8 +168,8 @@ pub fn display_pci_devices(json: bool) {
 }
 
 pub fn display_pci_profiles(json: bool, target: &str) {
-    match CfhdbPciDevice::get_devices() {
-        Some(devices) => {
+    match CfhdbPciDevice::get_device_from_busid(target) {
+        Ok(target_device) => {
             let profiles = match get_pci_profiles_from_url() {
                 Ok(t) => t,
                 Err(e) => {
@@ -177,14 +177,7 @@ pub fn display_pci_profiles(json: bool, target: &str) {
                     exit(1);
                 }
             };
-            let target_device = match devices.iter().find(|x| x.sysfs_busid == target) {
-                Some(t) => t,
-                None => {
-                    eprintln!("{}", t!("device_not_found"));
-                    exit(1);
-                }
-            };
-            CfhdbPciDevice::set_available_profiles(&profiles, target_device);
+            CfhdbPciDevice::set_available_profiles(&profiles, &target_device);
             if json {
                 let mut profile_rc = match target_device.available_profiles.0.borrow().clone() {
                     Some(t) => t,
@@ -205,14 +198,14 @@ pub fn display_pci_profiles(json: bool, target: &str) {
                 let json_pretty = serde_json::to_string_pretty(&profiles).unwrap();
                 println!("{}", json_pretty);
             } else {
-                display_pci_profiles_print_cli_table(target_device);
+                display_pci_profiles_print_cli_table(&target_device);
             }
         }
-        None => {
+        Err(_) => {
             eprintln!(
                 "[{}] {}",
                 t!("error").red(),
-                t!("failed_to_get_pci_devices")
+                t!("no_matching_pci_device")
             );
             exit(1);
         }
@@ -225,17 +218,91 @@ pub fn install_pci_profile(profile_codename: &str) {
 pub fn uninstall_pci_profile(profile_codename: &str) {
     todo!()
 }
+
 pub fn enable_pci_device(target_sysfs_id: &str) {
-    todo!()
+    match CfhdbPciDevice::get_device_from_busid(target_sysfs_id) {
+        Ok(target_device) => {
+            match target_device.enable_device() {
+                Ok(t) => t,
+                Err(e) => {
+                    eprintln!("[{}] {}", t!("error").red(), e);
+                    exit(1);
+                }
+            };
+        }
+        Err(_) => {
+            eprintln!(
+                "[{}] {}",
+                t!("error").red(),
+                t!("no_matching_pci_device")
+            );
+            exit(1);
+        }
+    }
 }
 pub fn disable_pci_device(target_sysfs_id: &str) {
-    todo!()
+    match CfhdbPciDevice::get_device_from_busid(target_sysfs_id) {
+        Ok(target_device) => {
+            match target_device.disable_device() {
+                Ok(t) => t,
+                Err(e) => {
+                    eprintln!("[{}] {}", t!("error").red(), e);
+                    exit(1);
+                }
+            };
+        }
+        Err(_) => {
+            eprintln!(
+                "[{}] {}",
+                t!("error").red(),
+                t!("no_matching_pci_device")
+            );
+            exit(1);
+        }
+    }
 }
+
 pub fn start_pci_device(target_sysfs_id: &str) {
-    todo!()
+    match CfhdbPciDevice::get_device_from_busid(target_sysfs_id) {
+        Ok(target_device) => {
+            match target_device.start_device() {
+                Ok(t) => t,
+                Err(e) => {
+                    eprintln!("[{}] {}", t!("error").red(), e);
+                    exit(1);
+                }
+            };
+        }
+        Err(_) => {
+            eprintln!(
+                "[{}] {}",
+                t!("error").red(),
+                t!("no_matching_pci_device")
+            );
+            exit(1);
+        }
+    }
 }
 pub fn stop_pci_device(target_sysfs_id: &str) {
-    todo!()
+    match CfhdbPciDevice::get_device_from_busid(target_sysfs_id) {
+        Ok(target_device) => {
+            match target_device.stop_device() {
+                Ok(t) => t,
+                Err(e) => {
+                    eprintln!("[{}] {}", t!("error").red(), e);
+                    exit(1);
+                }
+            };
+        }
+        Err(_) => {
+            eprintln!(
+                "[{}] {}",
+                t!("error").red(),
+                t!("no_matching_pci_device")
+            );
+            exit(1);
+        }
+    }
 }
 
 fn get_pci_profiles_from_url() -> Result<Vec<CfhdbPciProfile>, std::io::Error> {
