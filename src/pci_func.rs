@@ -213,7 +213,52 @@ pub fn display_pci_profiles(json: bool, target: &str) {
 }
 
 pub fn install_pci_profile(profile_codename: &str) {
-    todo!()
+    let profiles = match get_pci_profiles_from_url() {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("[{}] {}", t!("error").red(), e);
+            exit(1);
+        }
+    };
+    match CfhdbPciProfile::get_profile_from_codename(profile_codename, profiles) {
+        Ok(target_profile) => {
+            if target_profile.get_status() {
+                println!(
+                    "[{}] {}",
+                    t!("info").bright_green(),
+                    t!("profile_already_installed")
+                );
+            } else {
+                match target_profile.packages {
+                    Some(t) => {
+                        let package_list = t.join(" ");
+                        match duct::cmd!("pikman", "install", package_list).run() {
+                            Ok(_) => {
+                                println!(
+                                    "[{}] {}",
+                                    t!("info").bright_green(),
+                                    t!("package_installation_successful")
+                                );
+                            }
+                            Err(_) => {
+                                eprintln!("[{}] {}", t!("error").red(), t!("package_installation_failed"));
+                                exit(1);
+                            }
+                        }
+                    }
+                    None => {}
+                }
+            };
+        }
+        Err(_) => {
+            eprintln!(
+                "[{}] {}",
+                t!("error").red(),
+                t!("no_matching_pci_device")
+            );
+            exit(1);
+        }
+    }
 }
 pub fn uninstall_pci_profile(profile_codename: &str) {
     todo!()

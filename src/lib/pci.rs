@@ -301,6 +301,17 @@ pub struct CfhdbPciProfile {
 }
 
 impl CfhdbPciProfile {
+    pub fn get_profile_from_codename(codename: &str, profiles: Vec<CfhdbPciProfile>) -> Result<Self, std::io::Error> {
+        match profiles.iter().find(|x| x.codename == codename) {
+            Some(profile) => {
+                Ok(profile.clone())
+            }
+            None => {
+                Err(std::io::Error::new(ErrorKind::NotFound, "no pci profile with matching codename"))
+            }
+        }
+    }
+
     pub fn get_status(&self) -> bool {
         let file_path = "/var/cache/cfhdb/check_cmd.sh";
         {
@@ -310,7 +321,7 @@ impl CfhdbPciProfile {
                 .truncate(true)
                 .open(file_path)
                 .expect(&(file_path.to_string() + "cannot be read"));
-            file.write_all(format!("#! /bin/bash\nset -e\n{}", self.check_script).as_bytes())
+            file.write_all(format!("#! /bin/bash\nset -e\n{} > /dev/null 2>&1", self.check_script).as_bytes())
                 .expect(&(file_path.to_string() + "cannot be written to"));
             let mut perms = file
                 .metadata()
