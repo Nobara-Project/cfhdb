@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [[ "$(cat /proc/cmdline)" =~ (^|[[:space:]])cfhdb.ignore-blacklist($|[[:space:]]) ]]
+then
+  exit 0
+fi
+
 pci_blacklist_file_path="/etc/cfhdb/pci_blacklist"
 usb_blacklist_file_path="/etc/cfhdb/usb_blacklist"
 sysfs_remove_history="/tmp/cfhdb_sysfs_remove_history"
