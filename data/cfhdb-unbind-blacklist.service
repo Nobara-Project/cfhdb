@@ -1,0 +1,11 @@
+[Unit]
+Description=unbinds devices blacklisted via cfhdb
+
+[Service]
+Type=oneshot
+User=root
+RemainAfterExit=true
+ExecStart=/usr/lib/cfhdb/scripts/unbind_blacklist.sh
+
+[Install]
+WantedBy=basic.target
