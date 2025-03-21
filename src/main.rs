@@ -1,6 +1,4 @@
 use cli_table::{format::Justify, Cell, Color, Style, Table};
-use libcfhdb::pci::*;
-use libcfhdb::usb::*;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 

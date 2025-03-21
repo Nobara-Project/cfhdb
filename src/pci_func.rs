@@ -1,14 +1,11 @@
 use crate::config::*;
-use cli_table::{format::Justify, Cell, Color, Style, Table};
+use cli_table::{Cell, Color, Style, Table};
 use colored::Colorize;
 use libcfhdb::pci::*;
-use std::collections::HashMap;
-use std::fs;
-use std::io::Write;
-use std::ops::Deref;
-use std::os::unix::fs::PermissionsExt;
-use std::path::Path;
-use std::process::exit;
+use std::{
+    collections::HashMap, fs, io::Write, ops::Deref, os::unix::fs::PermissionsExt, path::Path,
+    process::exit,
+};
 use users::get_current_username;
 
 fn display_pci_devices_print_json(hashmap: HashMap<String, Vec<CfhdbPciDevice>>) {
@@ -232,23 +229,7 @@ pub fn install_pci_profile(profile_codename: &str) {
                 match target_profile.packages {
                     Some(t) => {
                         let package_list = t.join(" ");
-                        match duct::cmd!("pikman", "install", package_list).run() {
-                            Ok(_) => {
-                                println!(
-                                    "[{}] {}",
-                                    t!("info").bright_green(),
-                                    t!("package_installation_successful")
-                                );
-                            }
-                            Err(_) => {
-                                eprintln!(
-                                    "[{}] {}",
-                                    t!("error").red(),
-                                    t!("package_installation_failed")
-                                );
-                                exit(1);
-                            }
-                        }
+                        distro_packages_installer(&package_list);
                     }
                     None => {}
                 }
@@ -261,7 +242,7 @@ pub fn install_pci_profile(profile_codename: &str) {
                             fs::remove_file(file_fs_path).unwrap();
                         }
                         {
-                            let mut file = std::fs::OpenOptions::new()
+                            let mut file = fs::OpenOptions::new()
                                 .write(true)
                                 .create(true)
                                 .truncate(true)
@@ -336,40 +317,7 @@ pub fn uninstall_pci_profile(profile_codename: &str) {
                 match target_profile.packages {
                     Some(t) => {
                         let package_list = t.join(" ");
-                        match duct::cmd!("pikman", "purge", package_list).run() {
-                            Ok(_) => {
-                                match duct::cmd!("pikman", "purge").run() {
-                                    Ok(_) => {
-                                        println!(
-                                            "[{}] {}",
-                                            t!("info").bright_green(),
-                                            t!("package_removal_successful")
-                                        );
-                                    }
-                                    Err(_) => {
-                                        eprintln!(
-                                            "[{}] {}",
-                                            t!("error").red(),
-                                            t!("package_removal_failed")
-                                        );
-                                        exit(1);
-                                    }
-                                }
-                                println!(
-                                    "[{}] {}",
-                                    t!("info").bright_green(),
-                                    t!("package_removal_successful")
-                                );
-                            }
-                            Err(_) => {
-                                eprintln!(
-                                    "[{}] {}",
-                                    t!("error").red(),
-                                    t!("package_removal_failed")
-                                );
-                                exit(1);
-                            }
-                        }
+                        distro_packages_uninstaller(&package_list);
                     }
                     None => {}
                 }
@@ -382,7 +330,7 @@ pub fn uninstall_pci_profile(profile_codename: &str) {
                             fs::remove_file(file_fs_path).unwrap();
                         }
                         {
-                            let mut file = std::fs::OpenOptions::new()
+                            let mut file = fs::OpenOptions::new()
                                 .write(true)
                                 .create(true)
                                 .truncate(true)
@@ -505,7 +453,7 @@ pub fn stop_pci_device(target_sysfs_id: &str) {
 }
 
 fn get_pci_profiles_from_url() -> Result<Vec<CfhdbPciProfile>, std::io::Error> {
-    let cached_db_path = std::path::Path::new("/var/cache/cfhdb/pci.json");
+    let cached_db_path = Path::new("/var/cache/cfhdb/pci.json");
     println!(
         "[{}] {}",
         t!("info").bright_green(),
@@ -523,7 +471,7 @@ fn get_pci_profiles_from_url() -> Result<Vec<CfhdbPciProfile>, std::io::Error> {
                 t!("pci_download_successful")
             );
             let cache = t.text().unwrap();
-            let _ = std::fs::File::create(cached_db_path);
+            let _ = fs::File::create(cached_db_path);
             let _ = fs::write(cached_db_path, &cache);
             cache
         }
@@ -539,7 +487,7 @@ fn get_pci_profiles_from_url() -> Result<Vec<CfhdbPciProfile>, std::io::Error> {
                     t!("info").bright_green(),
                     t!("pci_download_cache_found")
                 );
-                std::fs::read_to_string(cached_db_path).unwrap()
+                fs::read_to_string(cached_db_path).unwrap()
             } else {
                 eprintln!(
                     "[{}] {}",

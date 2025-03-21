@@ -1,17 +1,13 @@
 use regex::Regex;
-use rust_i18n::t;
-use serde::Serialize;
-use serde::Serializer;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::fmt::format;
-use std::fs::File;
-use std::fs::{self, OpenOptions};
-use std::io::{self, BufRead};
-use std::io::{ErrorKind, Write};
-use std::os::unix::fs::PermissionsExt;
-use std::process::exit;
-use std::rc::Rc;
+use serde::{Serialize, Serializer};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    fs::{self, File},
+    io::{self, BufRead, ErrorKind, Write},
+    os::unix::fs::PermissionsExt,
+    rc::Rc,
+};
 use users::get_current_username;
 
 // Implement Serialize for Rc<RefCell<Option<Vec<Rc<CfhdbPciProfile>>>>>
@@ -61,7 +57,7 @@ pub struct CfhdbPciDevice {
 impl CfhdbPciDevice {
     fn get_kernel_driver(busid: &str) -> Option<String> {
         let device_uevent_path = format!("/sys/bus/pci/devices/{}/uevent", busid);
-        match std::fs::read_to_string(device_uevent_path) {
+        match fs::read_to_string(device_uevent_path) {
             Ok(content) => {
                 for line in content.lines() {
                     if line.starts_with("DRIVER=") {
@@ -108,11 +104,11 @@ impl CfhdbPciDevice {
         }
     }
 
-    fn get_started(busid: &str) -> Result<bool, std::io::Error> {
+    fn get_started(busid: &str) -> Result<bool, io::Error> {
         let device_enable_path = std::path::Path::new("/sys/bus/pci/devices")
             .join(busid)
             .join("enable");
-        let enable_status = std::fs::read_to_string(&device_enable_path)?;
+        let enable_status = fs::read_to_string(&device_enable_path)?;
         Ok(enable_status.trim() == "1")
     }
 
@@ -137,7 +133,7 @@ impl CfhdbPciDevice {
         return true;
     }
 
-    fn get_modinfo_name(busid: &str) -> Result<String, std::io::Error> {
+    fn get_modinfo_name(busid: &str) -> Result<String, io::Error> {
         let modalias = fs::read_to_string(format!("/sys/bus/pci/devices/{}/modalias", busid))?;
         let modinfo_cmd = duct::cmd!("modinfo", modalias);
         let stdout = modinfo_cmd.read()?;
@@ -150,10 +146,10 @@ impl CfhdbPciDevice {
                 }
             }
         }
-        Err(std::io::Error::new(ErrorKind::NotFound, "not found"))
+        Err(io::Error::new(ErrorKind::NotFound, "not found"))
     }
 
-    pub fn stop_device(&self) -> Result<(), std::io::Error> {
+    pub fn stop_device(&self) -> Result<(), io::Error> {
         let cmd = if get_current_username().unwrap() == "root" {
             duct::cmd!(
                 "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
@@ -174,7 +170,7 @@ impl CfhdbPciDevice {
         Ok(())
     }
 
-    pub fn start_device(&self) -> Result<(), std::io::Error> {
+    pub fn start_device(&self) -> Result<(), io::Error> {
         let cmd = if get_current_username().unwrap() == "root" {
             duct::cmd!(
                 "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
@@ -197,7 +193,7 @@ impl CfhdbPciDevice {
         Ok(())
     }
 
-    pub fn enable_device(&self) -> Result<(), std::io::Error> {
+    pub fn enable_device(&self) -> Result<(), io::Error> {
         let cmd = if get_current_username().unwrap() == "root" {
             duct::cmd!(
                 "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
@@ -218,7 +214,7 @@ impl CfhdbPciDevice {
         Ok(())
     }
 
-    pub fn disable_device(&self) -> Result<(), std::io::Error> {
+    pub fn disable_device(&self) -> Result<(), io::Error> {
         let cmd = if get_current_username().unwrap() == "root" {
             duct::cmd!(
                 "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
@@ -239,11 +235,11 @@ impl CfhdbPciDevice {
         Ok(())
     }
 
-    pub fn get_device_from_busid(busid: &str) -> Result<CfhdbPciDevice, std::io::Error> {
+    pub fn get_device_from_busid(busid: &str) -> Result<CfhdbPciDevice, io::Error> {
         let devices = match CfhdbPciDevice::get_devices() {
             Some(t) => t,
             None => {
-                return Err(std::io::Error::new(
+                return Err(io::Error::new(
                     ErrorKind::InvalidData,
                     "Could not get pci devices",
                 ));
@@ -251,7 +247,7 @@ impl CfhdbPciDevice {
         };
         match devices.iter().find(|x| x.sysfs_busid == busid) {
             Some(device) => Ok(device.clone()),
-            None => Err(std::io::Error::new(
+            None => Err(io::Error::new(
                 ErrorKind::NotFound,
                 "no pci device with matching busid",
             )),
@@ -370,10 +366,10 @@ impl CfhdbPciProfile {
     pub fn get_profile_from_codename(
         codename: &str,
         profiles: Vec<CfhdbPciProfile>,
-    ) -> Result<Self, std::io::Error> {
+    ) -> Result<Self, io::Error> {
         match profiles.iter().find(|x| x.codename == codename) {
             Some(profile) => Ok(profile.clone()),
-            None => Err(std::io::Error::new(
+            None => Err(io::Error::new(
                 ErrorKind::NotFound,
                 "no pci profile with matching codename",
             )),
@@ -383,7 +379,7 @@ impl CfhdbPciProfile {
     pub fn get_status(&self) -> bool {
         let file_path = "/var/cache/cfhdb/check_cmd.sh";
         {
-            let mut file = std::fs::OpenOptions::new()
+            let mut file = fs::OpenOptions::new()
                 .write(true)
                 .create(true)
                 .truncate(true)

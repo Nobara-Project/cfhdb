@@ -1,17 +1,13 @@
 use regex::Regex;
-use rust_i18n::t;
-use serde::Serialize;
-use serde::Serializer;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::fmt::format;
-use std::fs::File;
-use std::fs::{self, OpenOptions};
-use std::io::{self, BufRead};
-use std::io::{ErrorKind, Write};
-use std::os::unix::fs::PermissionsExt;
-use std::process::exit;
-use std::rc::Rc;
+use serde::{Serialize, Serializer};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    fs::{self, File},
+    io::{self, BufRead, ErrorKind, Write},
+    os::unix::fs::PermissionsExt,
+    rc::Rc,
+};
 use users::get_current_username;
 
 // Implement Serialize for Rc<RefCell<Option<Vec<Rc<CfhdbUsbProfile>>
@@ -68,7 +64,7 @@ impl CfhdbUsbDevice {
         let base_path = "/sys/bus/usb/devices";
 
         // Iterate over all entries in the base path
-        if let Ok(entries) = std::fs::read_dir(base_path) {
+        if let Ok(entries) = fs::read_dir(base_path) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if let Some(file_name) = path.file_name().and_then(|f| f.to_str()) {
@@ -76,7 +72,7 @@ impl CfhdbUsbDevice {
                     if file_name.starts_with(&format!("{}-", bus_number)) {
                         // Read the "devnum" file to get the device address
                         let devnum_path = path.join("devnum");
-                        if let Ok(devnum) = std::fs::read_to_string(devnum_path) {
+                        if let Ok(devnum) = fs::read_to_string(devnum_path) {
                             let devnum = devnum.trim().parse::<u8>().unwrap_or(0);
                             if devnum == device_address {
                                 // Return just the ID (e.g., "3-1.2")
@@ -94,7 +90,7 @@ impl CfhdbUsbDevice {
         let device_driver_format = format!("/sys/bus/usb/devices/{}:1.0/driver", busid);
         let device_driver_path = std::path::Path::new(&device_driver_format);
         if device_driver_path.exists() {
-            std::fs::read_link(device_driver_path)
+            fs::read_link(device_driver_path)
                 .ok()
                 .and_then(|link| link.file_name().map(|s| s.to_string_lossy().into_owned()))
         } else {
@@ -102,18 +98,18 @@ impl CfhdbUsbDevice {
         }
     }
 
-    fn get_serial(busid: &str) -> Result<String, std::io::Error> {
+    fn get_serial(busid: &str) -> Result<String, io::Error> {
         let device_manufacturer_path = std::path::Path::new("/sys/bus/usb/devices")
             .join(busid)
             .join("serial");
         if device_manufacturer_path.exists() {
-            match std::fs::read_to_string(device_manufacturer_path) {
+            match fs::read_to_string(device_manufacturer_path) {
                 Ok(t) => Ok(t.trim().to_string()),
-                Err(e) => Err(std::io::Error::new(std::io::ErrorKind::NotFound, e)),
+                Err(e) => Err(io::Error::new(ErrorKind::NotFound, e)),
             }
         } else {
-            Err(std::io::Error::new(
-                std::io::ErrorKind::NotFound,
+            Err(io::Error::new(
+                ErrorKind::NotFound,
                 "serial file could not be found!",
             ))
         }
@@ -211,7 +207,7 @@ impl CfhdbUsbDevice {
         return true;
     }
 
-    fn get_modinfo_name(busid: &str) -> Result<String, std::io::Error> {
+    fn get_modinfo_name(busid: &str) -> Result<String, io::Error> {
         let modalias = fs::read_to_string(format!("/sys/bus/usb/devices/{}:1.0/modalias", busid))?;
         let modinfo_cmd = duct::cmd!("modinfo", modalias);
         let stdout = modinfo_cmd.read()?;
@@ -224,10 +220,10 @@ impl CfhdbUsbDevice {
                 }
             }
         }
-        Err(std::io::Error::new(ErrorKind::NotFound, "not found"))
+        Err(io::Error::new(ErrorKind::NotFound, "not found"))
     }
 
-    pub fn stop_device(&self) -> Result<(), std::io::Error> {
+    pub fn stop_device(&self) -> Result<(), io::Error> {
         let cmd = if get_current_username().unwrap() == "root" {
             duct::cmd!(
                 "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
@@ -248,7 +244,7 @@ impl CfhdbUsbDevice {
         Ok(())
     }
 
-    pub fn start_device(&self) -> Result<(), std::io::Error> {
+    pub fn start_device(&self) -> Result<(), io::Error> {
         let cmd = if get_current_username().unwrap() == "root" {
             duct::cmd!(
                 "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
@@ -271,7 +267,7 @@ impl CfhdbUsbDevice {
         Ok(())
     }
 
-    pub fn enable_device(&self) -> Result<(), std::io::Error> {
+    pub fn enable_device(&self) -> Result<(), io::Error> {
         let cmd = if get_current_username().unwrap() == "root" {
             duct::cmd!(
                 "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
@@ -292,7 +288,7 @@ impl CfhdbUsbDevice {
         Ok(())
     }
 
-    pub fn disable_device(&self) -> Result<(), std::io::Error> {
+    pub fn disable_device(&self) -> Result<(), io::Error> {
         let cmd = if get_current_username().unwrap() == "root" {
             duct::cmd!(
                 "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
@@ -313,11 +309,11 @@ impl CfhdbUsbDevice {
         Ok(())
     }
 
-    pub fn get_device_from_busid(busid: &str) -> Result<CfhdbUsbDevice, std::io::Error> {
+    pub fn get_device_from_busid(busid: &str) -> Result<CfhdbUsbDevice, io::Error> {
         let devices = match CfhdbUsbDevice::get_devices() {
             Some(t) => t,
             None => {
-                return Err(std::io::Error::new(
+                return Err(io::Error::new(
                     ErrorKind::InvalidData,
                     "Could not get usb devices",
                 ));
@@ -325,7 +321,7 @@ impl CfhdbUsbDevice {
         };
         match devices.iter().find(|x| x.sysfs_busid == busid) {
             Some(device) => Ok(device.clone()),
-            None => Err(std::io::Error::new(
+            None => Err(io::Error::new(
                 ErrorKind::NotFound,
                 "no usb device with matching busid",
             )),
@@ -360,7 +356,7 @@ impl CfhdbUsbDevice {
                 Self::get_serial(&item_sysfs_busid).unwrap_or("Unknown".to_string());
             let item_protocol_code = from_hex(device_descriptor.protocol_code() as _, 4);
             //let item_class_code = (from_hex(device_descriptor.class_code() as _, 2) + &from_hex(device_descriptor.sub_class_code() as _, 2)).to_uppercase();
-            let item_class_code = (from_hex(device_descriptor.class_code() as _, 2)).to_uppercase();
+            let item_class_code = from_hex(device_descriptor.class_code() as _, 2).to_uppercase();
             let item_usb_version = device_descriptor.usb_version().to_string();
             let item_port_number = iter.port_number();
             let item_kernel_driver =
@@ -450,10 +446,10 @@ impl CfhdbUsbProfile {
     pub fn get_profile_from_codename(
         codename: &str,
         profiles: Vec<CfhdbUsbProfile>,
-    ) -> Result<Self, std::io::Error> {
+    ) -> Result<Self, io::Error> {
         match profiles.iter().find(|x| x.codename == codename) {
             Some(profile) => Ok(profile.clone()),
-            None => Err(std::io::Error::new(
+            None => Err(io::Error::new(
                 ErrorKind::NotFound,
                 "no usb profile with matching codename",
             )),
@@ -463,7 +459,7 @@ impl CfhdbUsbProfile {
     pub fn get_status(&self) -> bool {
         let file_path = "/var/cache/cfhdb/check_cmd.sh";
         {
-            let mut file = std::fs::OpenOptions::new()
+            let mut file = fs::OpenOptions::new()
                 .write(true)
                 .create(true)
                 .truncate(true)
