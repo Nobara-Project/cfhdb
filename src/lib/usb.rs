@@ -1,8 +1,44 @@
+use regex::Regex;
+use rust_i18n::t;
+use serde::Serialize;
+use serde::Serializer;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fmt::format;
+use std::fs::File;
+use std::fs::{self, OpenOptions};
+use std::io::{self, BufRead};
+use std::io::{ErrorKind, Write};
+use std::os::unix::fs::PermissionsExt;
+use std::process::exit;
 use std::rc::Rc;
+use users::get_current_username;
+
+// Implement Serialize for Rc<RefCell<Option<Vec<Rc<CfhdbUsbProfile>>
 
 #[derive(Debug, Clone)]
+pub struct ProfileWrapper(pub Rc<RefCell<Option<Vec<Rc<CfhdbUsbProfile>>>>>);
+impl Serialize for ProfileWrapper {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+    {
+        // Borrow the RefCell
+        let borrowed = self.0.borrow();
+
+        // Handle the Option
+        if let Some(profiles) = &*borrowed {
+            let simplified: Vec<String> =
+                profiles.iter().map(|rc| rc.codename.to_string()).collect();
+            simplified.serialize(serializer)
+        } else {
+            // Serialize as null if the Option is None
+            serializer.serialize_none()
+        }
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
 pub struct CfhdbUsbDevice {
     // String identification
     pub class_name: String,
@@ -21,11 +57,12 @@ pub struct CfhdbUsbDevice {
     pub address: u8,
     pub sysfs_busid: String,
     pub kernel_driver: String,
-    pub enabled: Option<bool>,
-    pub speed: rusb::Speed,
+    pub started: Option<bool>,
+    pub enabled: bool,
+    pub speed: String,
     // Cfhdb Extras
     pub vendor_icon_name: String,
-    pub available_profiles: Rc<RefCell<Option<Vec<Rc<CfhdbUsbProfile>>>>>,
+    pub available_profiles: ProfileWrapper,
 }
 impl CfhdbUsbDevice {
     fn get_sysfs_id(bus_number: u8, device_address: u8) -> Option<String> {
@@ -123,8 +160,158 @@ impl CfhdbUsbDevice {
             };
 
             if !available_profiles.is_empty() {
-                *device.available_profiles.borrow_mut() = Some(available_profiles.clone());
+                *device.available_profiles.0.borrow_mut() = Some(available_profiles.clone());
             };
+        }
+    }
+
+    fn get_started(busid: &str) -> Result<bool, std::io::Error> {
+        let device_enable_path = std::path::Path::new("/sys/bus/usb/devices")
+            .join(busid)
+            .join("enable");
+        let enable_status = std::fs::read_to_string(&device_enable_path)?;
+        Ok(enable_status.trim() == "1")
+    }
+
+    fn get_enabled(busid: &str) -> bool {
+        let usb_busid_blacklist_path = "/etc/cfhdb/usb_blacklist";
+        match File::open(&usb_busid_blacklist_path) {
+            Ok(file) => {
+                let reader = io::BufReader::new(file);
+                for line in reader.lines() {
+                    match line {
+                        Ok(t) => {
+                            if t.trim() == busid {
+                                return false;
+                            }
+                        }
+                        Err(_) => {}
+                    };
+                }
+            }
+            Err(_) => {}
+        }
+        return true;
+    }
+
+    fn get_modinfo_name(busid: &str) -> Result<String, std::io::Error> {
+        let modalias = fs::read_to_string(format!("/sys/bus/usb/devices/{}/modalias", busid))?;
+        let modinfo_cmd = duct::cmd!("modinfo", modalias);
+        let stdout = modinfo_cmd.read()?;
+        let re = Regex::new(r"name:\s+(\w+)").unwrap();
+        for line in stdout.lines() {
+            if let Some(captures) = re.captures(line) {
+                // Extract the module name from the capture group
+                if let Some(module_name) = captures.get(1) {
+                    return Ok(module_name.as_str().to_string());
+                }
+            }
+        }
+        Err(std::io::Error::new(ErrorKind::NotFound, "not found"))
+    }
+
+    pub fn stop_device(&self) -> Result<(), std::io::Error> {
+        let cmd = if get_current_username().unwrap() == "root" {
+            duct::cmd!(
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "stop_device",
+                "usb",
+                &self.sysfs_busid
+            )
+        } else {
+            duct::cmd!(
+                "pkexec",
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "stop_device",
+                "usb",
+                &self.sysfs_busid
+            )
+        };
+        cmd.run()?;
+        Ok(())
+    }
+
+    pub fn start_device(&self) -> Result<(), std::io::Error> {
+        let cmd = if get_current_username().unwrap() == "root" {
+            duct::cmd!(
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "start_device",
+                "usb",
+                &self.sysfs_busid,
+                Self::get_modinfo_name(&self.sysfs_busid).unwrap_or("".to_string())
+            )
+        } else {
+            duct::cmd!(
+                "pkexec",
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "start_device",
+                "usb",
+                &self.sysfs_busid,
+                Self::get_modinfo_name(&self.sysfs_busid).unwrap_or("".to_string())
+            )
+        };
+        cmd.run()?;
+        Ok(())
+    }
+
+    pub fn enable_device(&self) -> Result<(), std::io::Error> {
+        let cmd = if get_current_username().unwrap() == "root" {
+            duct::cmd!(
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "enable_device",
+                "usb",
+                &self.sysfs_busid
+            )
+        } else {
+            duct::cmd!(
+                "pkexec",
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "enable_device",
+                "usb",
+                &self.sysfs_busid
+            )
+        };
+        cmd.run()?;
+        Ok(())
+    }
+
+    pub fn disable_device(&self) -> Result<(), std::io::Error> {
+        let cmd = if get_current_username().unwrap() == "root" {
+            duct::cmd!(
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "disable_device",
+                "usb",
+                &self.sysfs_busid
+            )
+        } else {
+            duct::cmd!(
+                "pkexec",
+                "/usr/lib/cfhdb/scripts/sysfs_helper.sh",
+                "disable_device",
+                "usb",
+                &self.sysfs_busid
+            )
+        };
+        cmd.run()?;
+        Ok(())
+    }
+
+    pub fn get_device_from_busid(busid: &str) -> Result<CfhdbUsbDevice, std::io::Error> {
+        let devices = match CfhdbUsbDevice::get_devices() {
+            Some(t) => t,
+            None => {
+                return Err(std::io::Error::new(
+                    ErrorKind::InvalidData,
+                    "Could not get usb devices",
+                ));
+            }
+        };
+        match devices.iter().find(|x| x.sysfs_busid == busid) {
+            Some(device) => Ok(device.clone()),
+            None => Err(std::io::Error::new(
+                ErrorKind::NotFound,
+                "no usb device with matching busid",
+            )),
         }
     }
 
@@ -153,6 +340,8 @@ impl CfhdbUsbDevice {
                 Ok(t) => t.trim().to_string(),
                 Err(_) => "???".to_owned(),
             };
+            let item_started = Self::get_started(&item_sysfs_busid);
+            let item_enabled = Self::get_enabled(&item_sysfs_busid);
             let item_serial_number_string_index = "".to_owned();
             let item_protocol_code = from_hex(device_descriptor.protocol_code() as _, 4);
             let item_class_code = from_hex(device_descriptor.class_code() as _, 4).to_uppercase();
@@ -160,11 +349,16 @@ impl CfhdbUsbDevice {
             let item_product_id = from_hex(device_descriptor.product_id() as _, 4);
             let item_usb_version = device_descriptor.usb_version().to_string();
             let item_port_number = iter.port_number();
-            let item_kernel_driver = match Self::get_kernel_driver(&item_sysfs_busid) {
-                Some(t) => t,
-                None => "???".to_owned(),
+            let item_kernel_driver =
+                Self::get_kernel_driver(&item_sysfs_busid).unwrap_or("Unknown".to_string());
+            let item_speed = match iter.speed() {
+                rusb::Speed::Low => "1.0",
+                rusb::Speed::Full=> "1.1",
+                rusb::Speed::High => "2.0",
+                rusb::Speed::Super=> "3.0",
+                rusb::Speed::SuperPlus=> "3.1",
+                _ => "Unknown"
             };
-            let item_speed = iter.speed();
             let item_vendor_icon_name = "".to_owned();
 
             devices.push(Self {
@@ -181,11 +375,21 @@ impl CfhdbUsbDevice {
                 bus_number: item_bus_number,
                 port_number: item_port_number,
                 address: item_address,
-                kernel_driver: item_kernel_driver,
-                enabled: Some(true),
-                speed: item_speed,
+                kernel_driver: item_kernel_driver.clone(),
+                started: match item_started {
+                    Ok(t) => {
+                        if item_kernel_driver != "Unknown" {
+                            Some(t)
+                        } else {
+                            None
+                        }
+                    }
+                    Err(_) => None,
+                },
+                enabled: item_enabled,
+                speed: item_speed.to_string(),
                 vendor_icon_name: item_vendor_icon_name,
-                available_profiles: Rc::default(),
+                available_profiles: ProfileWrapper(Rc::default()),
             });
         }
 
@@ -236,3 +440,47 @@ pub struct CfhdbUsbProfile {
     pub removable: bool,
     pub priority: i32,
 }
+
+impl CfhdbUsbProfile {
+    pub fn get_profile_from_codename(
+        codename: &str,
+        profiles: Vec<CfhdbUsbProfile>,
+    ) -> Result<Self, std::io::Error> {
+        match profiles.iter().find(|x| x.codename == codename) {
+            Some(profile) => Ok(profile.clone()),
+            None => Err(std::io::Error::new(
+                ErrorKind::NotFound,
+                "no usb profile with matching codename",
+            )),
+        }
+    }
+
+    pub fn get_status(&self) -> bool {
+        let file_path = "/var/cache/cfhdb/check_cmd.sh";
+        {
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .open(file_path)
+                .expect(&(file_path.to_string() + "cannot be read"));
+            file.write_all(
+                format!(
+                    "#! /bin/bash\nset -e\n{} > /dev/null 2>&1",
+                    self.check_script
+                )
+                    .as_bytes(),
+            )
+                .expect(&(file_path.to_string() + "cannot be written to"));
+            let mut perms = file
+                .metadata()
+                .expect(&(file_path.to_string() + "cannot be read"))
+                .permissions();
+            perms.set_mode(0o777);
+            fs::set_permissions(file_path, perms)
+                .expect(&(file_path.to_string() + "cannot be written to"));
+        }
+        duct::cmd!("bash", "-c", file_path).run().is_ok()
+    }
+}
+
