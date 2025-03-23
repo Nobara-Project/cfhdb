@@ -34,6 +34,97 @@ impl Serialize for ProfileWrapper {
     }
 }
 
+fn from_hex(hex_number: u32, fill: usize) -> String {
+    format!("{:01$x}", hex_number, fill)
+}
+
+fn parse_from_lsusb_output() -> Vec<LsUsbEntry> {
+    let output = std::process::Command::new("lsusb")
+        .arg("-v")
+        .output()
+        .expect("Failed to execute lsusb");
+    let output = std::str::from_utf8(&output.stdout).expect("Invalid UTF-8 in lsusb output");
+
+    let mut did_first_header = false;
+    let mut lsusb_entries = vec![];
+
+    let mut current_vendor_id = None;
+    let mut current_product_id = None;
+    let mut current_vendor_name = None;
+    let mut current_product_name = None;
+    let mut current_interface_class = None;
+
+    for line in output.lines() {
+        let line = line.trim();
+        if !did_first_header {
+            if line.starts_with("Device Descriptor:") {
+                did_first_header = true
+            }
+        } else if !line.starts_with("Device Descriptor:") {
+            if line.starts_with("idVendor") {
+                let parts: Vec<&str> = line.trim().split_whitespace().collect();
+                current_vendor_id = parts[1].strip_prefix("0x");
+                current_vendor_name = Some(parts[2..].join(" "));
+            }
+            if line.starts_with("idProduct") {
+                let parts: Vec<&str> = line.trim().split_whitespace().collect();
+                current_product_id = parts[1].strip_prefix("0x");
+                current_product_name = Some(parts[2..].join(" "));
+            }
+            if line.starts_with("bInterfaceClass") {
+                let parts: Vec<&str> = line.trim().split_whitespace().collect();
+                current_interface_class = Some(
+                    from_hex(parts[1].to_string().parse::<u32>().unwrap_or(00) as _, 2)
+                        .to_uppercase(),
+                );
+            }
+        } else {
+            match (current_vendor_id, current_product_id) {
+                (Some(a), Some(b)) => {
+                    let entry = LsUsbEntry {
+                        vendor_id: a.to_string(),
+                        product_id: b.to_string(),
+                        vendor_name: current_vendor_name,
+                        product_name: current_product_name,
+                        interface_class: current_interface_class.unwrap_or("00".to_string()),
+                    };
+                    lsusb_entries.push(entry);
+                }
+                (_, _) => {}
+            }
+            current_vendor_id = None;
+            current_product_id = None;
+            current_vendor_name = None;
+            current_product_name = None;
+            current_interface_class = None;
+        }
+    }
+    match (current_vendor_id, current_product_id) {
+        (Some(a), Some(b)) => {
+            let entry = LsUsbEntry {
+                vendor_id: a.to_string(),
+                product_id: b.to_string(),
+                vendor_name: current_vendor_name,
+                product_name: current_product_name,
+                interface_class: current_interface_class.unwrap_or("00".to_string()),
+            };
+            lsusb_entries.push(entry);
+        }
+        (_, _) => {}
+    }
+
+    lsusb_entries
+}
+
+#[derive(Debug, Clone)]
+struct LsUsbEntry {
+    vendor_id: String,
+    product_id: String,
+    vendor_name: Option<String>,
+    product_name: Option<String>,
+    interface_class: String,
+}
+
 #[derive(Serialize, Debug, Clone)]
 pub struct CfhdbUsbDevice {
     // String identification
@@ -112,39 +203,6 @@ impl CfhdbUsbDevice {
                 ErrorKind::NotFound,
                 "serial file could not be found!",
             ))
-        }
-    }
-
-    fn parse_from_lsusb_output(vendor_id: &str, product_id: &str) -> Option<(String, String)> {
-        let mut current_vendor_id = None;
-        let mut current_product_id = None;
-
-        let output = std::process::Command::new("lsusb")
-            .arg("-v")
-            .output()
-            .expect("Failed to execute lsusb");
-        let output = std::str::from_utf8(&output.stdout).expect("Invalid UTF-8 in lsusb output");
-
-        for line in output.lines() {
-            if line.trim().starts_with("idVendor") {
-                if line.contains(vendor_id) {
-                    let parts: Vec<&str> = line.trim().split_whitespace().collect();
-                    current_vendor_id = Some(parts[2..].join(" "));
-                }
-            }
-        }
-
-        for line in output.lines() {
-            if line.trim().starts_with("idProduct") {
-                if line.contains(product_id) {
-                    let parts: Vec<&str> = line.trim().split_whitespace().collect();
-                    current_product_id = Some(parts[2..].join(" "));
-                }
-            }
-        }
-        match (current_vendor_id, current_product_id) {
-            (Some(a), Some(b)) => Some((a, b)),
-            (_, _) => None,
         }
     }
 
@@ -329,9 +387,7 @@ impl CfhdbUsbDevice {
     }
 
     pub fn get_devices() -> Option<Vec<Self>> {
-        let from_hex =
-            |hex_number: u32, fill: usize| -> String { format!("{:01$x}", hex_number, fill) };
-
+        let lsusb_entries = parse_from_lsusb_output();
         // Get hardware devices
         let usb_devices = rusb::devices().unwrap();
         let mut devices = vec![];
@@ -345,10 +401,17 @@ impl CfhdbUsbDevice {
                 Self::get_sysfs_id(item_bus_number, item_address).unwrap_or("???".to_owned()); //format!("{}-{}-{}", iter.bus_number(), iter.port_number(), iter.address());
             let item_vendor_id = from_hex(device_descriptor.vendor_id() as _, 4);
             let item_product_id = from_hex(device_descriptor.product_id() as _, 4);
-            let (item_manufacturer_string_index, item_product_string_index) =
-                match Self::parse_from_lsusb_output(&item_vendor_id, &item_product_id) {
-                    Some(t) => (t.0, t.1),
-                    None => ("???".to_owned(), "???".to_owned()),
+            let item_lsusb_entry = lsusb_entries
+                .iter()
+                .cloned()
+                .find(|x| x.vendor_id == item_vendor_id && x.product_id == item_product_id);
+            let (item_manufacturer_string_index, item_product_string_index, item_class_code) =
+                match item_lsusb_entry {
+                    Some(t) => match (t.vendor_name, t.product_name) {
+                        (Some(a), Some(b)) => (a, b, t.interface_class),
+                        (_, _) => ("???".to_owned(), "???".to_owned(), t.interface_class),
+                    },
+                    None => ("???".to_owned(), "???".to_owned(), "00".to_owned()),
                 };
             let item_started = Self::get_started(&item_sysfs_busid);
             let item_enabled = Self::get_enabled(&item_sysfs_busid);
@@ -356,7 +419,7 @@ impl CfhdbUsbDevice {
                 Self::get_serial(&item_sysfs_busid).unwrap_or("Unknown".to_string());
             let item_protocol_code = from_hex(device_descriptor.protocol_code() as _, 4);
             //let item_class_code = (from_hex(device_descriptor.class_code() as _, 2) + &from_hex(device_descriptor.sub_class_code() as _, 2)).to_uppercase();
-            let item_class_code = from_hex(device_descriptor.class_code() as _, 2).to_uppercase();
+            //let item_class_code = from_hex(device_descriptor.class_code() as _, 2).to_uppercase();
             let item_usb_version = device_descriptor.usb_version().to_string();
             let item_port_number = iter.port_number();
             let item_kernel_driver =
