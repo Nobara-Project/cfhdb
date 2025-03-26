@@ -1,26 +1,25 @@
 use regex::Regex;
 use serde::{Serialize, Serializer};
 use std::{
-    cell::RefCell,
     collections::HashMap,
     fs::{self, File},
     io::{self, BufRead, ErrorKind, Write},
     os::unix::fs::PermissionsExt,
-    rc::Rc,
+    sync::{Arc, Mutex},
 };
 use users::get_current_username;
 
-// Implement Serialize for Rc<RefCell<Option<Vec<Rc<CfhdbPciProfile>>>>>
+// Implement Serialize for Arc<Mutex<Option<Vec<Arc<CfhdbPciProfile>>>>>
 
 #[derive(Debug, Clone)]
-pub struct ProfileWrapper(pub Rc<RefCell<Option<Vec<Rc<CfhdbPciProfile>>>>>);
+pub struct ProfileWrapper(pub Arc<Mutex<Option<Vec<Arc<CfhdbPciProfile>>>>>);
 impl Serialize for ProfileWrapper {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        // Borrow the RefCell
-        let borrowed = self.0.borrow();
+        // Borrow the Mutex
+        let borrowed = self.0.lock().unwrap();
 
         // Handle the Option
         if let Some(profiles) = &*borrowed {
@@ -73,7 +72,7 @@ impl CfhdbPciDevice {
     }
 
     pub fn set_available_profiles(profile_data: &[CfhdbPciProfile], device: &Self) {
-        let mut available_profiles: Vec<Rc<CfhdbPciProfile>> = vec![];
+        let mut available_profiles: Vec<Arc<CfhdbPciProfile>> = vec![];
         for profile in profile_data.iter() {
             let matching = {
                 if (profile.blacklisted_class_ids.contains(&"*".to_owned())
@@ -95,11 +94,11 @@ impl CfhdbPciDevice {
             };
 
             if matching {
-                available_profiles.push(Rc::new(profile.clone()));
+                available_profiles.push(Arc::new(profile.clone()));
             };
 
             if !available_profiles.is_empty() {
-                *device.available_profiles.0.borrow_mut() = Some(available_profiles.clone());
+                *device.available_profiles.0.lock().unwrap() = Some(available_profiles.clone());
             };
         }
     }
@@ -309,7 +308,7 @@ impl CfhdbPciDevice {
                 sysfs_busid: item_sysfs_busid,
                 sysfs_id: item_sysfs_id,
                 kernel_driver: item_kernel_driver,
-                available_profiles: ProfileWrapper(Rc::default()),
+                available_profiles: ProfileWrapper(Arc::default()),
             });
         }
 

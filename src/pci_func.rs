@@ -81,7 +81,7 @@ fn display_pci_devices_print_cli_table(hashmap: HashMap<String, Vec<CfhdbPciDevi
 
 fn display_pci_profiles_print_cli_table(target: &CfhdbPciDevice) {
     let mut table_struct = vec![];
-    let mut profiles = match target.available_profiles.0.borrow().clone() {
+    let mut profiles = match target.available_profiles.0.lock().unwrap().clone() {
         Some(t) => t,
         None => {
             eprintln!(
@@ -180,7 +180,7 @@ pub fn display_pci_profiles(json: bool, target: &str) {
             };
             CfhdbPciDevice::set_available_profiles(&profiles, &target_device);
             if json {
-                let mut profile_rc = match target_device.available_profiles.0.borrow().clone() {
+                let mut profile_arc = match target_device.available_profiles.0.lock().unwrap().clone() {
                     Some(t) => t,
                     None => {
                         eprintln!(
@@ -191,8 +191,8 @@ pub fn display_pci_profiles(json: bool, target: &str) {
                         exit(1);
                     }
                 };
-                profile_rc.sort_by_key(|k| k.priority);
-                let profiles = profile_rc
+                profile_arc.sort_by_key(|k| k.priority);
+                let profiles = profile_arc
                     .iter()
                     .map(|s| s.codename.clone())
                     .collect::<Vec<_>>();
