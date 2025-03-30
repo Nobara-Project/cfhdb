@@ -1,4 +1,8 @@
+use std::{fs, io::Write, os::unix::fs::PermissionsExt, path::Path, process::exit};
+
 use cli_table::{format::Justify, Cell, Color, Style, Table};
+use colored::Colorize;
+use users::get_current_username;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -387,28 +391,47 @@ fn main() {
     }
 }
 
-/*fn main() {
-    let profiles = [
-        CfhdbUsbProfile
-        {
-            i18n_desc: "Open source NVIDIA drivers for Linux (Latest)".to_owned(),
-            icon_name: "".to_owned(),
-            class_codes: ["0000".to_owned(),].to_vec(),
-            vendor_ids: ["10de".to_owned()].to_vec(),
-            product_ids: ["*".to_owned()].to_vec(),
-            blacklisted_class_codes: [].to_vec(),
-            blacklisted_vendor_ids: [].to_vec(),
-            blacklisted_product_ids: [].to_vec(),
-            packages: Some(["nvidie-driver-open-555".to_owned()].to_vec()),
-            install_script: None,
-            remove_script: None,
-            priority: 10
-        }
-    ];
-    let devices = CfhdbUsbDevice::get_devices().unwrap();
-    for i in &devices {
-        CfhdbUsbDevice::set_available_profiles(&profiles, &i);
+pub fn run_in_lock_script(script: &str) {
+    let file_path = "/var/cache/cfhdb/script_lock.sh";
+    let file_fs_path = Path::new(file_path);
+    if file_fs_path.exists() {
+        fs::remove_file(file_fs_path).unwrap();
     }
-    let hashmap = CfhdbUsbDevice::create_class_hashmap(devices);
-    dbg!(hashmap);
-}*/
+    {
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(file_path)
+            .expect(&(file_path.to_string() + "cannot be read"));
+        file.write_all(script.as_bytes())
+            .expect(&(file_path.to_string() + "cannot be written to"));
+        let mut perms = file
+            .metadata()
+            .expect(&(file_path.to_string() + "cannot be read"))
+            .permissions();
+        perms.set_mode(0o777);
+        fs::set_permissions(file_path, perms)
+            .expect(&(file_path.to_string() + "cannot be written to"));
+    }
+    let final_cmd = if get_current_username().unwrap() == "root" {
+        duct::cmd!(file_path)
+    } else {
+        duct::cmd!("pkexec", file_path)
+    };
+    match final_cmd.run() {
+        Ok(_) => {
+            println!(
+                "[{}] {}",
+                t!("info").bright_green(),
+                t!("install_script_successful")
+            );
+            fs::remove_file(file_fs_path).unwrap();
+        }
+        Err(_) => {
+            eprintln!("[{}] {}", t!("error").red(), t!("install_script_failed"));
+            fs::remove_file(file_fs_path).unwrap();
+            exit(1);
+        }
+    }
+}
