@@ -2,6 +2,7 @@ use std::{fs, io::Write, os::unix::fs::PermissionsExt, path::Path, process::exit
 
 use cli_table::{format::Justify, Cell, Color, Style, Table};
 use colored::Colorize;
+use serde::Deserialize;
 use users::get_current_username;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -14,6 +15,12 @@ mod usb_func;
 #[macro_use]
 extern crate rust_i18n;
 i18n!("locales", fallback = "en_US");
+
+#[derive(Deserialize)]
+pub struct ProfileUrlConfig {
+    pci_json_url: String,
+    usb_json_url: String,
+}
 
 fn print_help_msg() {
     let table = vec![
@@ -434,4 +441,11 @@ pub fn run_in_lock_script(script: &str) {
             exit(1);
         }
     }
+}
+
+pub fn get_profile_url_config() -> ProfileUrlConfig {
+    let file_path = "/etc/cfhdb/profile-config.json";
+    let json_content = fs::read_to_string(file_path).unwrap();
+    let config: ProfileUrlConfig = serde_json::from_str(&json_content).unwrap();
+    config
 }
