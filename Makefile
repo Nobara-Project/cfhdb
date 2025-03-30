@@ -18,6 +18,8 @@ install_no_build:
 	mkdir -p $(DESTDIR)/etc/cfhdb/
 	cp -rvf data/profile-config.json $(DESTDIR)/etc/cfhdb/
 	chmod 755 $(DESTDIR)/usr/lib/cfhdb/scripts/*.sh
+	mkdir -p $(DESTDIR)/usr/lib/systemd/system/
+	cp data/cfhdb-unbind-blacklist.service $(DESTDIR)/usr/lib/systemd/system/
 	cp -rvf data/polkit-1 $(DESTDIR)/usr/share/
 
 install_no_build_debug:
@@ -29,6 +31,8 @@ install_no_build_debug:
 	mkdir -p $(DESTDIR)/etc/cfhdb/
 	cp -rvf data/profile-config.json $(DESTDIR)/etc/cfhdb/
 	chmod 755 $(DESTDIR)/usr/lib/cfhdb/scripts/*.sh
+	mkdir -p $(DESTDIR)/usr/lib/systemd/system/
+	cp data/cfhdb-unbind-blacklist.service $(DESTDIR)/usr/lib/systemd/system/
 	cp -rvf data/polkit-1 $(DESTDIR)/usr/share/
 
 install:
@@ -42,4 +46,6 @@ install:
 	mkdir -p $(DESTDIR)/etc/cfhdb/
 	cp -rvf data/profile-config.json $(DESTDIR)/etc/cfhdb/
 	chmod 755 $(DESTDIR)/usr/lib/cfhdb/scripts/*.sh
+	mkdir -p $(DESTDIR)/usr/lib/systemd/system/
+	cp data/cfhdb-unbind-blacklist.service $(DESTDIR)/usr/lib/systemd/system/
 	cp -rvf data/polkit-1 $(DESTDIR)/usr/share/
