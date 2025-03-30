@@ -1,12 +1,11 @@
-use crate::config::*;
+use crate::{config::*, run_in_lock_script};
 use cli_table::{Cell, Color, Style, Table};
 use colored::Colorize;
 use libcfhdb::usb::*;
 use std::{
-    collections::HashMap, fs, io::Write, ops::Deref, os::unix::fs::PermissionsExt, path::Path,
+    collections::HashMap, fs, ops::Deref, path::Path,
     process::exit,
 };
-use users::get_current_username;
 
 fn display_usb_devices_print_json(hashmap: HashMap<String, Vec<CfhdbUsbDevice>>) {
     let json_pretty = serde_json::to_string_pretty(&hashmap).unwrap();
@@ -182,17 +181,18 @@ pub fn display_usb_profiles(json: bool, target: &str) {
             };
             CfhdbUsbDevice::set_available_profiles(&profiles, &target_device);
             if json {
-                let mut profile_arc = match target_device.available_profiles.0.lock().unwrap().clone() {
-                    Some(t) => t,
-                    None => {
-                        eprintln!(
-                            "[{}] {}",
-                            t!("error").red(),
-                            t!("no_profiles_available_for_device")
-                        );
-                        exit(1);
-                    }
-                };
+                let mut profile_arc =
+                    match target_device.available_profiles.0.lock().unwrap().clone() {
+                        Some(t) => t,
+                        None => {
+                            eprintln!(
+                                "[{}] {}",
+                                t!("error").red(),
+                                t!("no_profiles_available_for_device")
+                            );
+                            exit(1);
+                        }
+                    };
                 profile_arc.sort_by_key(|k| k.priority);
                 let profiles = profile_arc
                     .iter()
@@ -228,64 +228,30 @@ pub fn install_usb_profile(profile_codename: &str) {
                     t!("profile_already_installed")
                 );
             } else {
-                match target_profile.packages {
-                    Some(t) => {
-                        let package_list = t.join(" ");
-                        distro_packages_installer(&package_list);
-                    }
-                    None => {}
-                }
-
                 match target_profile.install_script {
-                    Some(t) => {
-                        let file_path = "/var/cache/cfhdb/script_lock.sh";
-                        let file_fs_path = Path::new(file_path);
-                        if file_fs_path.exists() {
-                            fs::remove_file(file_fs_path).unwrap();
+                    Some(t) => match target_profile.packages {
+                        Some(a) => {
+                            let package_list = a.join(" ");
+                            run_in_lock_script(&format!(
+                                "#! /bin/bash\nset -e\n{}\n{}",
+                                distro_packages_installer(&package_list),
+                                t
+                            ));
                         }
-                        {
-                            let mut file = fs::OpenOptions::new()
-                                .write(true)
-                                .create(true)
-                                .truncate(true)
-                                .open(file_path)
-                                .expect(&(file_path.to_string() + "cannot be read"));
-                            file.write_all(format!("#! /bin/bash\nset -e\n{}", t).as_bytes())
-                                .expect(&(file_path.to_string() + "cannot be written to"));
-                            let mut perms = file
-                                .metadata()
-                                .expect(&(file_path.to_string() + "cannot be read"))
-                                .permissions();
-                            perms.set_mode(0o777);
-                            fs::set_permissions(file_path, perms)
-                                .expect(&(file_path.to_string() + "cannot be written to"));
+                        None => {
+                            run_in_lock_script(&format!("#! /bin/bash\nset -e\n{}", t));
                         }
-                        let final_cmd = if get_current_username().unwrap() == "root" {
-                            duct::cmd!(file_path)
-                        } else {
-                            duct::cmd!("pkexec", file_path)
-                        };
-                        match final_cmd.run() {
-                            Ok(_) => {
-                                println!(
-                                    "[{}] {}",
-                                    t!("info").bright_green(),
-                                    t!("install_script_successful")
-                                );
-                                fs::remove_file(file_fs_path).unwrap();
-                            }
-                            Err(_) => {
-                                eprintln!(
-                                    "[{}] {}",
-                                    t!("error").red(),
-                                    t!("install_script_failed")
-                                );
-                                fs::remove_file(file_fs_path).unwrap();
-                                exit(1);
-                            }
+                    },
+                    None => match target_profile.packages {
+                        Some(a) => {
+                            let package_list = a.join(" ");
+                            run_in_lock_script(&format!(
+                                "#! /bin/bash\nset -e\n{}",
+                                distro_packages_installer(&package_list)
+                            ));
                         }
-                    }
-                    None => {}
+                        None => {}
+                    },
                 }
             }
         }
@@ -316,60 +282,30 @@ pub fn uninstall_usb_profile(profile_codename: &str) {
                     t!("profile_not_installed")
                 );
             } else {
-                match target_profile.packages {
-                    Some(t) => {
-                        let package_list = t.join(" ");
-                        distro_packages_uninstaller(&package_list);
-                    }
-                    None => {}
-                }
-
                 match target_profile.remove_script {
-                    Some(t) => {
-                        let file_path = "/var/cache/cfhdb/script_lock.sh";
-                        let file_fs_path = Path::new(file_path);
-                        if file_fs_path.exists() {
-                            fs::remove_file(file_fs_path).unwrap();
+                    Some(t) => match target_profile.packages {
+                        Some(a) => {
+                            let package_list = a.join(" ");
+                            run_in_lock_script(&format!(
+                                "#! /bin/bash\nset -e\n{}\n{}",
+                                distro_packages_uninstaller(&package_list),
+                                t
+                            ));
                         }
-                        {
-                            let mut file = fs::OpenOptions::new()
-                                .write(true)
-                                .create(true)
-                                .truncate(true)
-                                .open(file_path)
-                                .expect(&(file_path.to_string() + "cannot be read"));
-                            file.write_all(format!("#! /bin/bash\nset -e\n{}", t).as_bytes())
-                                .expect(&(file_path.to_string() + "cannot be written to"));
-                            let mut perms = file
-                                .metadata()
-                                .expect(&(file_path.to_string() + "cannot be read"))
-                                .permissions();
-                            perms.set_mode(0o777);
-                            fs::set_permissions(file_path, perms)
-                                .expect(&(file_path.to_string() + "cannot be written to"));
+                        None => {
+                            run_in_lock_script(&format!("#! /bin/bash\nset -e\n{}", t));
                         }
-                        let final_cmd = if get_current_username().unwrap() == "root" {
-                            duct::cmd!(file_path)
-                        } else {
-                            duct::cmd!("pkexec", file_path)
-                        };
-                        match final_cmd.run() {
-                            Ok(_) => {
-                                println!(
-                                    "[{}] {}",
-                                    t!("info").bright_green(),
-                                    t!("remove_script_successful")
-                                );
-                                fs::remove_file(file_fs_path).unwrap();
-                            }
-                            Err(_) => {
-                                eprintln!("[{}] {}", t!("error").red(), t!("remove_script_failed"));
-                                fs::remove_file(file_fs_path).unwrap();
-                                exit(1);
-                            }
+                    },
+                    None => match target_profile.packages {
+                        Some(a) => {
+                            let package_list = a.join(" ");
+                            run_in_lock_script(&format!(
+                                "#! /bin/bash\nset -e\n{}",
+                                distro_packages_uninstaller(&package_list)
+                            ));
                         }
-                    }
-                    None => {}
+                        None => {}
+                    },
                 }
             }
         }
