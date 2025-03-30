@@ -21,6 +21,8 @@ install_no_build:
 	mkdir -p $(DESTDIR)/usr/lib/systemd/system/
 	cp data/cfhdb-unbind-blacklist.service $(DESTDIR)/usr/lib/systemd/system/
 	cp -rvf data/polkit-1 $(DESTDIR)/usr/share/
+	mkdir -p $(DESTDIR)/var/cache/cfhdb
+	chmod 777 $(DESTDIR)/var/cache/cfhdb
 
 install_no_build_debug:
 	mkdir -p $(DESTDIR)/usr/bin/
@@ -34,6 +36,8 @@ install_no_build_debug:
 	mkdir -p $(DESTDIR)/usr/lib/systemd/system/
 	cp data/cfhdb-unbind-blacklist.service $(DESTDIR)/usr/lib/systemd/system/
 	cp -rvf data/polkit-1 $(DESTDIR)/usr/share/
+	mkdir -p $(DESTDIR)/var/cache/cfhdb
+	chmod 777 $(DESTDIR)/var/cache/cfhdb
 
 install:
 	mkdir -p $(DESTDIR)/usr/bin/
@@ -49,3 +53,5 @@ install:
 	mkdir -p $(DESTDIR)/usr/lib/systemd/system/
 	cp data/cfhdb-unbind-blacklist.service $(DESTDIR)/usr/lib/systemd/system/
 	cp -rvf data/polkit-1 $(DESTDIR)/usr/share/
+	mkdir -p $(DESTDIR)/var/cache/cfhdb
+	chmod 777 $(DESTDIR)/var/cache/cfhdb
