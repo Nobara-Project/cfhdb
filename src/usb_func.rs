@@ -1,11 +1,16 @@
-use crate::{config::*, run_in_lock_script};
+use crate::{config::*, get_profile_url_config, run_in_lock_script};
 use cli_table::{Cell, Color, Style, Table};
 use colored::Colorize;
+use lazy_static::lazy_static;
 use libcfhdb::usb::*;
 use std::{
     collections::HashMap, fs, ops::Deref, path::Path,
     process::exit,
 };
+
+lazy_static! {
+    static ref USB_PROFILE_JSON_URL: String = get_profile_url_config().usb_json_url;
+}
 
 fn display_usb_devices_print_json(hashmap: HashMap<String, Vec<CfhdbUsbDevice>>) {
     let json_pretty = serde_json::to_string_pretty(&hashmap).unwrap();
@@ -401,7 +406,7 @@ fn get_usb_profiles_from_url() -> Result<Vec<CfhdbUsbProfile>, std::io::Error> {
         .timeout(std::time::Duration::from_secs(5))
         .build()
         .unwrap();
-    let data = match client.get(USB_PROFILE_JSON_URL).send() {
+    let data = match client.get(USB_PROFILE_JSON_URL.clone()).send() {
         Ok(t) => {
             println!(
                 "[{}] {}",

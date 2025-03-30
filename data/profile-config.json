@@ -1,0 +1,4 @@
+{
+    "pci_json_url": "https://github.com/CosmicFusion/cfhdb/raw/refs/heads/master/data/profiles/pci.json",
+    "usb_json_url": "https://github.com/CosmicFusion/cfhdb/raw/refs/heads/master/data/profiles/usb.json"
+}
