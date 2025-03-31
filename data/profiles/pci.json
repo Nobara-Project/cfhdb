@@ -1,9 +1,9 @@
 {
     "profiles": [
       {
-        "codename": "nvidia-open-driver-565",
-        "i18n_desc": "NVIDIA Graphics drivers (565) for Linux with Official Nvidia Open Modules (Recommended)",
-        "i18n_desc[en_US]": "NVIDIA Graphics drivers (565) for Linux with Official Nvidia Open Modules (Recommended)",
+        "codename": "nvfeature-open.nobaraproject.org",
+        "i18n_desc": "NVIDIA Graphics drivers (New Feature) for Linux with Official Nvidia Open Modules (Recommended)",
+        "i18n_desc[en_US]": "NVIDIA Graphics drivers (New Feature) for Linux with Official Nvidia Open Modules (Recommended)",
         "icon_name": "nvidia",
         "license": "Proprietary",
         "class_ids": ["0300", "0302", "0380"],
@@ -21,7 +21,7 @@
         "priority": 10
       },
       {
-        "codename": "nvidia-driver-565",
+        "codename": "nvfeature.nobaraproject.org",
         "i18n_desc": "NVIDIA Graphics drivers (565) for Linux (Closed)",
         "i18n_desc[en_US]": "NVIDIA Graphics drivers (565) for Linux (Closed)",
         "icon_name": "nvidia",
