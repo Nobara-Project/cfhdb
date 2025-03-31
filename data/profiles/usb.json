@@ -12,10 +12,10 @@
             "blacklisted_class_codes": [],
             "blacklisted_vendor_ids": [],
             "blacklisted_product_ids": [],
-            "packages": ["xone", "lpf-xone-firmware"],
+            "packages": "Option::is_none",
             "check_script": "rpm -q xone && rpm -q lpf-xone-firmware",
-            "install_script": "Option::is_none",
-            "remove_script": "Option::is_none",
+            "install_script": "dnf install -y \"dnf5-command(builddep)\"; usermod -aG pkg-build $SUDO_USER && dnf4 install -y lpf-xone-firmware xone && dnf4 remove -y xone-firmware",
+            "remove_script": "dnf remove -y lpf-xone-firmware xone xone-firmware xpad-noone",
             "experimental": false,
             "removable": true,
             "priority": 10
