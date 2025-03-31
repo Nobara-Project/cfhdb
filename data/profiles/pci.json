@@ -18,7 +18,7 @@
         "remove_script": "dnf remove -y nvidia* && dnf remove -y kmod-nvidia* && dnf remove -y akmod-nvidia && dnf remove -y dkms-nvidia && rm -rf /var/lib/dkms/nvidia* && dnf install -y nvidia-gpu-firmware && akmods; dracut -f --regenerate-all",
         "experimental": true,
         "removable": true,
-        "priority": 10
+        "priority": 14
       },
       {
         "codename": "nv-nvb.nobaraproject.org",
@@ -38,7 +38,7 @@
         "remove_script": "dnf remove -y nvidia* && dnf remove -y kmod-nvidia* && dnf remove -y akmod-nvidia && dnf remove -y dkms-nvidia && rm -rf /var/lib/dkms/nvidia* && dnf install -y nvidia-gpu-firmware && akmods; dracut -f --regenerate-all",
         "experimental": true,
         "removable": true,
-        "priority": 12
+        "priority": 15
       },
       {
         "codename": "nv-nvnf-open.nobaraproject.org",
@@ -78,7 +78,7 @@
         "remove_script": "dnf remove -y nvidia* && dnf remove -y kmod-nvidia* && dnf remove -y akmod-nvidia && dnf remove -y dkms-nvidia && rm -rf /var/lib/dkms/nvidia* && dnf install -y nvidia-gpu-firmware && akmods; dracut -f --regenerate-all",
         "experimental": false,
         "removable": true,
-        "priority": 12
+        "priority": 11
       },
       {
         "codename": "nv-nvp-open.nobaraproject.org",
@@ -98,7 +98,7 @@
         "remove_script": "dnf remove -y nvidia* && dnf remove -y kmod-nvidia* && dnf remove -y akmod-nvidia && dnf remove -y dkms-nvidia && rm -rf /var/lib/dkms/nvidia* && dnf install -y nvidia-gpu-firmware && akmods; dracut -f --regenerate-all",
         "experimental": false,
         "removable": true,
-        "priority": 10
+        "priority": 12
       },
       {
         "codename": "nv-nvp.nobaraproject.org",
@@ -118,7 +118,7 @@
         "remove_script": "dnf remove -y nvidia* && dnf remove -y kmod-nvidia* && dnf remove -y akmod-nvidia && dnf remove -y dkms-nvidia && rm -rf /var/lib/dkms/nvidia* && dnf install -y nvidia-gpu-firmware && akmods; dracut -f --regenerate-all",
         "experimental": false,
         "removable": true,
-        "priority": 12
+        "priority": 13
       },
       {
         "codename": "nv-nvvd-open.nobaraproject.org",
@@ -138,7 +138,7 @@
         "remove_script": "dnf remove -y nvidia* && dnf remove -y kmod-nvidia* && dnf remove -y akmod-nvidia && dnf remove -y dkms-nvidia && rm -rf /var/lib/dkms/nvidia* && dnf install -y nvidia-gpu-firmware && akmods; dracut -f --regenerate-all",
         "experimental": false,
         "removable": true,
-        "priority": 10
+        "priority": 12
       },
       {
         "codename": "nv-nvvd.nobaraproject.org",
@@ -158,7 +158,87 @@
         "remove_script": "dnf remove -y nvidia* && dnf remove -y kmod-nvidia* && dnf remove -y akmod-nvidia && dnf remove -y dkms-nvidia && rm -rf /var/lib/dkms/nvidia* && dnf install -y nvidia-gpu-firmware && akmods; dracut -f --regenerate-all",
         "experimental": false,
         "removable": true,
-        "priority": 12
+        "priority": 13
+      },
+      {
+        "codename": "rocm-meta",
+        "i18n_desc": "AMD ROCm Compute Driver Stack.",
+        "i18n_desc[en_US]": "AMD ROCm Compute Driver Stack.",
+        "icon_name": "amd",
+        "license": "MIT + Proprietary",
+        "class_ids": ["0300", "0302", "0380"],
+        "vendor_ids": ["1002", "1022"],
+        "device_ids": ["*"],
+        "blacklisted_class_ids": [],
+        "blacklisted_vendor_ids": [],
+        "blacklisted_device_ids": [],
+        "packages": ["rocm-meta", "rocm-comgr", "rocm-runtime", "rocm-smi", "rocm-clinfo", "rocm-cmake", "rocm-core", "rocm-rpm-macros", "python3-torch-rocm-gfx9", "python3-torchaudio-rocm-gfx9", "rocprim-devel", "rocblas", "rocsparse", "rocminfo", "rocrand", "hipblas", "hipfft", "hipsolver", "rocm-hip", "rocfft", "rocsolver", "hipblaslt", "rocalution", "roctracer", "rocm-opencl"],
+        "check_script": "rpm -q rocm-meta && rpm -q rocm-comgr && rpm -q rocm-runtime && rpm -q rocm-smi && rpm -q rocm-clinfo && rpm -q rocm-cmake && rpm -q rocm-core && rpm -q rocm-rpm-macros && rpm -q python3-torch-rocm-gfx9 && rpm -q python3-torchaudio-rocm-gfx9 && rpm -q rocprim-devel && rpm -q rocblas && rpm -q rocsparse && rpm -q rocminfo && rpm -q rocrand && rpm -q hipblas && rpm -q hipfft && rpm -q hipsolver && rpm -q rocm-hip && rpm -q rocfft && rpm -q rocsolver && rpm -q hipblaslt && rpm -q rocalution && rpm -q roctracer && rpm -q rocm-opencl",
+        "install_script": "Option::is_none",
+        "remove_script": "Option::is_none",
+        "experimental": false,
+        "removable": true,
+        "priority": 99
+      },
+      {
+        "codename": "steamdeck-jupiter-driver",
+        "i18n_desc": "Steamdeck Jupiter driver.",
+        "i18n_desc[en_US]": "Steamdeck Jupiter driver.",
+        "icon_name": "input-gaming",
+        "license": "MIT",
+        "class_ids": ["*"],
+        "vendor_ids": ["1002"],
+        "device_ids": ["1435", "163f"],
+        "blacklisted_class_ids": [],
+        "blacklisted_vendor_ids": [],
+        "blacklisted_device_ids": [],
+        "packages": ["jupiter-hw-support", "jupiter-fan-control"],
+        "check_script": "rpm -q jupiter-hw-support && rpm -q jupiter-fan-control",
+        "install_script": "Option::is_none",
+        "remove_script": "Option::is_none",
+        "experimental": false,
+        "removable": true,
+        "priority": 99
+      },
+      {
+        "codename": "alsa-firmware",
+        "i18n_desc": "Firmware binaries for a number of sound cards.",
+        "i18n_desc[en_US]": "Firmware binaries for a number of sound cards.",
+        "icon_name": "speaker",
+        "license": "Proprietary",
+        "class_ids": ["*"],
+        "vendor_ids": ["1102"],
+        "device_ids": ["*"],
+        "blacklisted_class_ids": [],
+        "blacklisted_vendor_ids": [],
+        "blacklisted_device_ids": [],
+        "packages": ["alsa-firmware"],
+        "check_script": "rpm -q alsa-firmware",
+        "install_script": "Option::is_none",
+        "remove_script": "Option::is_none",
+        "experimental": false,
+        "removable": true,
+        "priority": 99
+      },
+      {
+        "codename": "broadcom-wl",
+        "i18n_desc": "Broadcom Wireless Driver.",
+        "i18n_desc[en_US]": "Broadcom Wireless Driver.",
+        "icon_name": "network-wireless",
+        "license": "Proprietary",
+        "class_ids": ["*"],
+        "vendor_ids": ["14e4"],
+        "device_ids": ["*"],
+        "blacklisted_class_ids": [],
+        "blacklisted_vendor_ids": [],
+        "blacklisted_device_ids": [],
+        "packages": ["steamdeck-jupiter-driver"],
+        "check_script": "dpkg-query -W -f='${Status}' steamdeck-jupiter-driver 2>/dev/null | grep \"install ok installed\"",
+        "install_script": "Option::is_none",
+        "remove_script": "Option::is_none",
+        "experimental": false,
+        "removable": true,
+        "priority": 99
       }
     ]
   }
