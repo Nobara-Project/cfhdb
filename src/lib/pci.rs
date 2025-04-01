@@ -358,6 +358,7 @@ pub struct CfhdbPciProfile {
     pub remove_script: Option<String>,
     pub experimental: bool,
     pub removable: bool,
+    pub veiled: bool,
     pub priority: i32,
 }
 
@@ -386,7 +387,7 @@ impl CfhdbPciProfile {
                 .expect(&(file_path.to_string() + "cannot be read"));
             file.write_all(
                 format!(
-                    "#! /bin/bash\nset -e\n{} > /dev/null 2>&1",
+                    "#! /bin/bash\nset -e\n{}",
                     self.check_script
                 )
                 .as_bytes(),
@@ -400,6 +401,6 @@ impl CfhdbPciProfile {
             fs::set_permissions(file_path, perms)
                 .expect(&(file_path.to_string() + "cannot be written to"));
         }
-        duct::cmd!("bash", "-c", file_path).run().is_ok()
+        duct::cmd!("bash", "-c", file_path).stderr_to_stdout().stdout_null().run().is_ok()
     }
 }

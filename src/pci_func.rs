@@ -550,6 +550,7 @@ fn get_pci_profiles_from_url() -> Result<Vec<CfhdbPciProfile>, std::io::Error> {
             };
             let experimental = profile["experimental"].as_bool().unwrap_or_default();
             let removable = profile["removable"].as_bool().unwrap_or_default();
+            let veiled = profile["veiled"].as_bool().unwrap_or_default();
             let priority = profile["priority"].as_i64().unwrap_or_default();
             // Parse into the Struct
             let profile_struct = CfhdbPciProfile {
@@ -569,6 +570,7 @@ fn get_pci_profiles_from_url() -> Result<Vec<CfhdbPciProfile>, std::io::Error> {
                 remove_script,
                 experimental,
                 removable,
+                veiled,
                 priority: priority as i32,
             };
             profiles_array.push(profile_struct);
