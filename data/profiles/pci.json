@@ -178,9 +178,9 @@
         "blacklisted_vendor_ids": [],
         "blacklisted_device_ids": [],
         "packages": "Option::is_none",
-        "check_script": "rpm -q rocm-meta && rpm -q rocm-comgr && rpm -q rocm-runtime && rpm -q rocm-smi && rpm -q rocm-clinfo && rpm -q rocm-cmake && rpm -q rocm-core && rpm -q rocm-rpm-macros && rpm -q python3-torch-rocm-gfx9 && rpm -q python3-torchaudio-rocm-gfx9 && rpm -q rocprim-devel && rpm -q rocblas && rpm -q rocsparse && rpm -q rocminfo && rpm -q rocrand && rpm -q hipblas && rpm -q hipfft && rpm -q hipsolver && rpm -q rocm-hip && rpm -q rocfft && rpm -q rocsolver && rpm -q hipblaslt && rpm -q rocalution && rpm -q roctracer && rpm -q rocm-opencl",
-        "install_script": "dnf install -y rocm-meta rocm-comgr rocm-runtime rocm-smi rocm-clinfo rocm-cmake rocm-core rocm-rpm-macros python3-torch-rocm-gfx9 python3-torchaudio-rocm-gfx9 rocprim-devel rocblas rocsparse rocminfo rocrand hipblas hipfft hipsolver rocm-hip rocfft rocsolver hipblaslt rocalution roctracer rocm-opencl --refresh",
-        "remove_script": "dnf remove -y rocm-meta rocm-comgr rocm-runtime rocm-smi rocm-clinfo rocm-cmake rocm-core rocm-rpm-macros python3-torch-rocm-gfx9 python3-torchaudio-rocm-gfx9 rocprim-devel rocblas rocsparse rocminfo rocrand hipblas hipfft hipsolver rocm-hip rocfft rocsolver hipblaslt rocalution roctracer rocm-opencl",
+        "check_script": "rpm -q rocm-meta && rpm -q rocm-comgr && rpm -q rocm-runtime && rpm -q rocm-smi && rpm -q rocm-clinfo && rpm -q rocm-cmake && rpm -q rocm-core && rpm -q rocm-rpm-macros && rpm -q rocprim-devel && rpm -q rocblas && rpm -q rocsparse && rpm -q rocminfo && rpm -q rocrand && rpm -q hipblas && rpm -q hipfft && rpm -q hipsolver && rpm -q rocm-hip && rpm -q rocfft && rpm -q rocsolver && rpm -q hipblaslt && rpm -q rocalution && rpm -q roctracer && rpm -q rocm-opencl",
+        "install_script": "dnf install -y rocm-meta rocm-comgr rocm-runtime rocm-smi rocm-clinfo rocm-cmake rocm-core rocm-rpm-macros rocprim-devel rocblas rocsparse rocminfo rocrand hipblas hipfft hipsolver rocm-hip rocfft rocsolver hipblaslt rocalution roctracer rocm-opencl --refresh",
+        "remove_script": "dnf remove -y rocm-meta rocm-comgr rocm-runtime rocm-smi rocm-clinfo rocm-cmake rocm-core rocm-rpm-macros rocprim-devel rocblas rocsparse rocminfo rocrand hipblas hipfft hipsolver rocm-hip rocfft rocsolver hipblaslt rocalution roctracer rocm-opencl",
         "experimental": false,
         "removable": true,
         "priority": 99
