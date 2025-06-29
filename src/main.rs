@@ -421,6 +421,7 @@ pub fn run_in_lock_script(script: &str) {
         fs::set_permissions(file_path, perms)
             .expect(&(file_path.to_string() + "cannot be written to"));
     }
+    duct::cmd!("export SUDO_USER=$USER")
     let final_cmd = if get_current_username().unwrap() == "root" {
         duct::cmd!(file_path)
     } else {
