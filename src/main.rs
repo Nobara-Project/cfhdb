@@ -381,10 +381,7 @@ fn parse_args(args: Vec<String>) {
 
 fn main() {
     // Setup locales
-    let current_locale = match std::env::var_os("LANG") {
-        Some(v) => v.into_string().unwrap(),
-        None => panic!("$LANG is not set"),
-    };
+    let current_locale = get_locale().unwrap_or_else(|| String::from("en-US")).replace("-", "_");
     rust_i18n::set_locale(current_locale.strip_suffix(".UTF-8").unwrap());
     let args: Vec<String> = std::env::args().collect();
     let arg_num = args.len();
