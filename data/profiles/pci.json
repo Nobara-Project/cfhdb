@@ -85,8 +85,8 @@
       },
       {
         "codename": "nv-no-initramfs.nobaraproject.org",
-        "i18n_desc": "NVIDIA Drivers: Remove the modules from the initramfs to save space in /boot",
-        "i18n_desc[en_US]": "NVIDIA Drivers: Remove the modules from the initramfs to save space in /boot",
+        "i18n_desc": "NVIDIA Drivers: Remove modules from initramfs to save space in /boot [NOT RECOMMENDED WITH LUKS OR INTEL IGPU]",
+        "i18n_desc[en_US]": "NVIDIA Drivers: Remove modules from initramfs to save space in /boot [NOT RECOMMENDED WITH LUKS OR INTEL IGPU]",
         "icon_name": "nvidia",
         "license": "None",
         "class_ids": ["0300", "0302", "0380"],
