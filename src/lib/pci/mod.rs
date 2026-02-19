@@ -385,14 +385,8 @@ impl CfhdbPciProfile {
                 .truncate(true)
                 .open(file_path)
                 .expect(&(file_path.to_string() + "cannot be read"));
-            file.write_all(
-                format!(
-                    "#! /bin/bash\nset -e\n{}",
-                    self.check_script
-                )
-                .as_bytes(),
-            )
-            .expect(&(file_path.to_string() + "cannot be written to"));
+            file.write_all(format!("#! /bin/bash\nset -e\n{}", self.check_script).as_bytes())
+                .expect(&(file_path.to_string() + "cannot be written to"));
             let mut perms = file
                 .metadata()
                 .expect(&(file_path.to_string() + "cannot be read"))
@@ -401,6 +395,10 @@ impl CfhdbPciProfile {
             fs::set_permissions(file_path, perms)
                 .expect(&(file_path.to_string() + "cannot be written to"));
         }
-        duct::cmd!("bash", "-c", file_path).stderr_to_stdout().stdout_null().run().is_ok()
+        duct::cmd!("bash", "-c", file_path)
+            .stderr_to_stdout()
+            .stdout_null()
+            .run()
+            .is_ok()
     }
 }

@@ -9,8 +9,22 @@ use sys_locale::get_locale;
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 mod config;
+mod bt_func;
+mod dmi_func;
 mod pci_func;
 mod usb_func;
+
+
+const PERM_FIX_PROG: &str = r###"
+#! /bin/bash
+
+USER=$(whoami)
+
+chown $USER:$USER -R /var/cache/cfhdb || pkexec chown $USER:$USER -R /var/cache/cfhdb 
+chmod 777 -R /var/cache/cfhdb || pkexec chmod 777 -R /var/cache/cfhdb
+rm -rf /var/cache/cfhdb/check_cmd.sh || pkexec rm -rf /var/cache/cfhdb/check_cmd.sh
+
+"###;
 
 // Init translations for current crate.
 #[macro_use]
@@ -21,6 +35,8 @@ i18n!("locales", fallback = "en_US");
 pub struct ProfileUrlConfig {
     pci_json_url: String,
     usb_json_url: String,
+    dmi_json_url: String,
+    bt_json_url: String,
 }
 
 fn print_help_msg() {
@@ -195,6 +211,119 @@ fn print_help_msg() {
             "--stop-usb-device {sysfs_id}".cell(),
             "-srud".cell(),
         ],
+        // DMI arguments title
+        vec![
+            t!("")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Yellow)),
+            t!("help_msg_title_dmi")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Yellow)),
+            t!("")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Yellow)),
+        ],
+        // DMI arguments entries
+        vec![
+            t!("help_msg_action_list_dmi_info").cell(),
+            "--list-dmi-info".cell(),
+            "-ldi".cell(),
+        ],
+        vec![
+            t!("help_msg_action_list_compatible_dmi_profiles").cell(),
+            "--list-dmi-profiles".cell(),
+            "-ldp".cell(),
+        ],
+        vec![
+            t!("help_msg_action_install_dmi_profile").cell(),
+            "--install-dmi-profile {profile codename}".cell(),
+            "-idp".cell(),
+        ],
+        vec![
+            t!("help_msg_action_uninstall_dmi_profile").cell(),
+            "--uninstall-dmi-profile {profile codename}".cell(),
+            "-udp".cell(),
+        ],
+        // BT arguments title
+        vec![
+            t!("")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Yellow)),
+            t!("help_msg_title_bt")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Yellow)),
+            t!("")
+                .cell()
+                .bold(true)
+                .justify(Justify::Center)
+                .foreground_color(Some(Color::Yellow)),
+        ],
+        // BT arguments entries
+        vec![
+            t!("help_msg_action_list_bt_devices").cell(),
+            "--list-bt-devices".cell(),
+            "-lbd".cell(),
+        ],
+        vec![
+            t!("help_msg_action_list_compatible_bt_profiles").cell(),
+            "--list-bt-profiles {address}".cell(),
+            "-lbp".cell(),
+        ],
+        vec![
+            t!("help_msg_action_install_bt_profile").cell(),
+            "--install-bt-profile {profile codename}".cell(),
+            "-ibp".cell(),
+        ],
+        vec![
+            t!("help_msg_action_uninstall_bt_profile").cell(),
+            "--uninstall-bt-profile {profile codename}".cell(),
+            "-ubp".cell(),
+        ],
+        vec![
+            t!("help_msg_action_pair_bt_device").cell(),
+            "--pair-bt-device {address}".cell(),
+            "-pbd".cell(),
+        ],
+        vec![
+            t!("help_msg_action_connect_bt_device").cell(),
+            "--connect-bt-device {address}".cell(),
+            "-cbd".cell(),
+        ],
+        vec![
+            t!("help_msg_action_disconnect_bt_device").cell(),
+            "--disconnect-bt-device {address}".cell(),
+            "-pbd".cell(),
+        ],
+        vec![
+            t!("help_msg_action_trust_bt_device").cell(),
+            "--trust-bt-device {address}".cell(),
+            "-tbd".cell(),
+        ],
+        vec![
+            t!("help_msg_action_untrust_bt_device").cell(),
+            "--untrust-bt-device {address}".cell(),
+            "-utbd".cell(),
+        ],
+        vec![
+            t!("help_msg_action_block_bt_device").cell(),
+            "--block-bt-device {address}".cell(),
+            "-bbd".cell(),
+        ],
+        vec![
+            t!("help_msg_action_unblock_bt_device").cell(),
+            "--unblock-bt-device {address}".cell(),
+            "-ubbd".cell(),
+        ],
     ]
     .table()
     .title(vec![
@@ -206,6 +335,7 @@ fn print_help_msg() {
         "".cell().bold(true).justify(Justify::Center),
     ])
     .bold(true);
+
 
     let table_display = table.display().unwrap();
 
@@ -240,6 +370,23 @@ fn parse_args(args: Vec<String>) {
             "-dud" | "--disable-usb-device" => action = "dud",
             "-ssud" | "--start-usb-device" => action = "ssud",
             "-srud" | "--stop-usb-device" => action = "srud",
+            // DMI arguments
+            "-ldi" | "--list-dmi-info" => action = "ldi",
+            "-ldp" | "--list-dmi-profiles" => action = "ldp",
+            "-idp" | "--install-dmi-profile" => action = "idp",
+            "-udp" | "--uninstall-dmi-profile" => action = "udp",
+            // BT arguments
+            "-lbd" | "--list-bt-devices" => action = "lbd",
+            "-lbp" | "--list-bt-profiles" => action = "lbp",
+            "-ibp" | "--install-bt-profile" => action = "ibp",
+            "-ubp" | "--uninstall-bt-profile" => action = "ubp",
+            "-pbd" | "--pair-bt-device" => action = "pbd",
+            "-cbd" | "--connect-bt-device" => action = "cbd",
+            "-dbd" | "--disconnect-bt-device" => action = "dbd",
+            "-tbd" | "--trust-bt-device" => action = "tbd",
+            "-utbd" | "--untrust-bt-device" => action = "utbd",
+            "-bbd" | "--block-bt-device" => action = "bbd",
+            "-ubbd" | "--unblock-bt-device" => action = "ubbd",
             _ => {
                 additional_arguments.push(arg);
             }
@@ -372,6 +519,113 @@ fn parse_args(args: Vec<String>) {
                 usb_func::stop_usb_device(&additional_arguments[1]);
             }
         }
+        // DMI arguments
+        "ldi" => {
+            dmi_func::display_dmi_info(json_mode);
+        }
+        "ldp" => {
+            dmi_func::display_dmi_profiles(json_mode);
+        }
+        "idp" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_profile_specified"));
+                std::process::exit(1);
+            } else {
+                dmi_func::install_dmi_profile(&additional_arguments[1]);
+            }
+        }
+        "udp" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_profile_specified"));
+                std::process::exit(1);
+            } else {
+                dmi_func::uninstall_dmi_profile(&additional_arguments[1]);
+            }
+        }
+        // BT arguments
+        "lbd" => {
+            bt_func::display_bt_devices(json_mode);
+        }
+        "lbp" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                bt_func::display_bt_profiles(json_mode, &additional_arguments[1]);
+            }
+        }
+        "ibp" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_profile_specified"));
+                std::process::exit(1);
+            } else {
+                bt_func::install_bt_profile(&additional_arguments[1]);
+            }
+        }
+        "ubp" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_profile_specified"));
+                std::process::exit(1);
+            } else {
+                bt_func::uninstall_bt_profile(&additional_arguments[1]);
+            }
+        }
+        "pbd" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                bt_func::pair_bt_device(&additional_arguments[1]);
+            }
+        }
+        "cbd" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                bt_func::connect_bt_device(&additional_arguments[1]);
+            }
+        }
+        "dbd" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                bt_func::disconnect_bt_device(&additional_arguments[1]);
+            }
+        }
+        "tbd" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                bt_func::trust_bt_device(&additional_arguments[1]);
+            }
+        }
+        "utbd" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                bt_func::untrust_bt_device(&additional_arguments[1]);
+            }
+        }
+        "bbd" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                bt_func::block_bt_device(&additional_arguments[1]);
+            }
+        }
+        "ubbd" => {
+            if additional_arguments.len() < 2 {
+                eprintln!("{}", t!("no_device_specified"));
+                std::process::exit(1);
+            } else {
+                bt_func::unblock_bt_device(&additional_arguments[1]);
+            }
+        }
         // Unknown argument
         _ => {
             eprintln!("{}", t!("unknown_argument"));
@@ -381,6 +635,8 @@ fn parse_args(args: Vec<String>) {
 }
 
 fn main() {
+    // fix perms
+    duct::cmd!("bash", "-c", PERM_FIX_PROG).run().unwrap();
     // Setup locales
     let current_locale = get_locale().unwrap_or_else(|| String::from("en-US")).replace("-", "_");
     rust_i18n::set_locale(&current_locale);
