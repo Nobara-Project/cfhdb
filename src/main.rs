@@ -4,6 +4,7 @@ use cli_table::{format::Justify, Cell, Color, Style, Table};
 use colored::Colorize;
 use serde::Deserialize;
 use users::get_current_username;
+use sys_locale::get_locale;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -637,11 +638,8 @@ fn main() {
     // fix perms
     duct::cmd!("bash", "-c", PERM_FIX_PROG).run().unwrap();
     // Setup locales
-    let current_locale = match std::env::var_os("LANG") {
-        Some(v) => v.into_string().unwrap(),
-        None => panic!("$LANG is not set"),
-    };
-    rust_i18n::set_locale(current_locale.strip_suffix(".UTF-8").unwrap());
+    let current_locale = get_locale().unwrap_or_else(|| String::from("en-US")).replace("-", "_");
+    rust_i18n::set_locale(&current_locale);
     let args: Vec<String> = std::env::args().collect();
     let arg_num = args.len();
     match arg_num {

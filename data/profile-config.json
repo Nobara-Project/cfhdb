@@ -1,6 +1,6 @@
 {
-    "pci_json_url": "https://github.com/CosmicFusion/cfhdb/raw/refs/heads/master/data/profiles/pci.json",
-    "usb_json_url": "https://github.com/CosmicFusion/cfhdb/raw/refs/heads/master/data/profiles/usb.json",
-    "dmi_json_url": "https://github.com/CosmicFusion/cfhdb/raw/refs/heads/master/data/profiles/dmi.json",
-    "bt_json_url": "https://github.com/CosmicFusion/cfhdb/raw/refs/heads/master/data/profiles/bt.json"
+    "pci_json_url": "https://github.com/Nobara-Project/cfhdb/raw/refs/heads/master/data/profiles/pci.json",
+    "usb_json_url": "https://github.com/Nobara-Project/cfhdb/raw/refs/heads/master/data/profiles/usb.json",
+    "dmi_json_url": "https://github.com/Nobara-Project/cfhdb/raw/refs/heads/master/data/profiles/dmi.json",
+    "bt_json_url": "https://github.com/Nobara-Project/cfhdb/raw/refs/heads/master/data/profiles/bt.json"
 }
