@@ -3,10 +3,7 @@ use cli_table::{Cell, Color, Style, Table};
 use colored::Colorize;
 use lazy_static::lazy_static;
 use libcfhdb::pci::*;
-use std::{
-    collections::HashMap, fs, ops::Deref, path::Path,
-    process::exit,
-};
+use std::{collections::HashMap, fs, ops::Deref, path::Path, process::exit};
 
 lazy_static! {
     static ref PCI_PROFILE_JSON_URL: String = get_profile_url_config().pci_json_url;
@@ -127,12 +124,12 @@ fn display_pci_profiles_print_cli_table(target: &CfhdbPciDevice) {
     let table = table_struct
         .table()
         .title(vec![
-            t!("pci_table_profile_codename").cell().bold(true),
-            t!("pci_table_name_i18n_desc").cell().bold(true),
-            t!("pci_table_name_license").cell().bold(true),
-            t!("pci_table_name_priority").cell().bold(true),
-            t!("pci_table_name_experimental").cell().bold(true),
-            t!("pci_table_name_installed").cell().bold(true),
+            t!("table_profile_codename").cell().bold(true),
+            t!("table_name_i18n_desc").cell().bold(true),
+            t!("table_name_license").cell().bold(true),
+            t!("table_name_priority").cell().bold(true),
+            t!("table_name_experimental").cell().bold(true),
+            t!("table_name_installed").cell().bold(true),
         ])
         .bold(true);
 

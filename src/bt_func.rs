@@ -2,59 +2,60 @@ use crate::{config::*, get_profile_url_config, run_in_lock_script};
 use cli_table::{Cell, Color, Style, Table};
 use colored::Colorize;
 use lazy_static::lazy_static;
-use libcfhdb::usb::*;
+use libcfhdb::bt::*;
 use std::{collections::HashMap, fs, ops::Deref, path::Path, process::exit};
 
 lazy_static! {
-    static ref USB_PROFILE_JSON_URL: String = get_profile_url_config().usb_json_url;
+    static ref BT_PROFILE_JSON_URL: String = get_profile_url_config().bt_json_url;
 }
 
-fn display_usb_devices_print_json(hashmap: HashMap<String, Vec<CfhdbUsbDevice>>) {
+fn display_bt_devices_print_json(hashmap: HashMap<String, Vec<CfhdbBtDevice>>) {
     let json_pretty = serde_json::to_string_pretty(&hashmap).unwrap();
     println!("{}", json_pretty);
 }
-fn display_usb_devices_print_cli_table(hashmap: HashMap<String, Vec<CfhdbUsbDevice>>) {
+fn display_bt_devices_print_cli_table(hashmap: HashMap<String, Vec<CfhdbBtDevice>>) {
     for (class, devices) in hashmap {
         let mut table_struct = vec![];
         for device in devices {
             let cell_table = vec![
-                match device.manufacturer_string_index.char_indices().nth(18) {
-                    None => device.manufacturer_string_index,
-                    Some((idx, _)) => device.manufacturer_string_index[..idx].to_string() + "...",
+                match device.alias.char_indices().nth(18) {
+                    None => device.alias,
+                    Some((idx, _)) => device.alias[..idx].to_string() + "...",
                 }
                 .cell(),
-                match device.product_string_index.char_indices().nth(36) {
-                    None => device.product_string_index,
-                    Some((idx, _)) => device.product_string_index[..idx].to_string() + "...",
+                match device.name.char_indices().nth(36) {
+                    None => device.name,
+                    Some((idx, _)) => device.name[..idx].to_string() + "...",
                 }
                 .cell(),
-                device.sysfs_busid.cell(),
-                device.speed.cell(),
-                match device.kernel_driver.as_str() {
-                    "Unknown" => t!("unknown")
-                        .to_string()
-                        .cell()
-                        .foreground_color(Some(Color::Yellow)),
-                    _ => device.kernel_driver.cell(),
-                },
-                match device.started {
-                    Some(t) => {
-                        if t {
-                            t!("enabled_yes")
-                                .cell()
-                                .foreground_color(Some(Color::Green))
-                        } else {
-                            t!("enabled_no").cell().foreground_color(Some(Color::Red))
-                        }
-                    }
-                    None => t!("enabled_na").cell(),
-                },
-                if device.enabled {
+                device.address.cell(),
+                if device.paired {
                     t!("enabled_yes")
                         .cell()
                         .foreground_color(Some(Color::Green))
                 } else {
                     t!("enabled_no").cell().foreground_color(Some(Color::Red))
+                },
+                if device.connected {
+                    t!("enabled_yes")
+                        .cell()
+                        .foreground_color(Some(Color::Green))
+                } else {
+                    t!("enabled_no").cell().foreground_color(Some(Color::Red))
+                },
+                if device.trusted {
+                    t!("enabled_yes")
+                        .cell()
+                        .foreground_color(Some(Color::Green))
+                } else {
+                    t!("enabled_no").cell().foreground_color(Some(Color::Red))
+                },
+                if device.blocked {
+                    t!("enabled_yes")
+                        .cell()
+                        .foreground_color(Some(Color::Red))
+                } else {
+                    t!("enabled_no").cell().foreground_color(Some(Color::Green))
                 },
             ];
             table_struct.push(cell_table);
@@ -62,13 +63,13 @@ fn display_usb_devices_print_cli_table(hashmap: HashMap<String, Vec<CfhdbUsbDevi
         let table = table_struct
             .table()
             .title(vec![
-                t!("usb_table_manufacturer_string_index").cell().bold(true),
-                t!("usb_table_product_string_index").cell().bold(true),
-                t!("usb_table_sysfs_bus_id").cell().bold(true),
-                t!("usb_table_speed").cell().bold(true),
-                t!("usb_table_driver").cell().bold(true),
-                t!("usb_table_started").cell().bold(true),
-                t!("usb_table_enabled").cell().bold(true),
+                t!("bt_table_alias").cell().bold(true),
+                t!("bt_table_name").cell().bold(true),
+                t!("bt_table_address").cell().bold(true),
+                t!("bt_table_paired").cell().bold(true),
+                t!("bt_table_connected").cell().bold(true),
+                t!("bt_table_trusted").cell().bold(true),
+                t!("bt_table_blocked").cell().bold(true),
             ])
             .bold(true);
 
@@ -76,13 +77,13 @@ fn display_usb_devices_print_cli_table(hashmap: HashMap<String, Vec<CfhdbUsbDevi
 
         println!(
             "{}\n{}",
-            t!("usb_class_name_".to_string() + &class).bright_green(),
+            t!("bt_class_name_".to_string() + &class).bright_green(),
             table_display
         );
     }
 }
 
-fn display_usb_profiles_print_cli_table(target: &CfhdbUsbDevice) {
+fn display_bt_profiles_print_cli_table(target: &CfhdbBtDevice) {
     let mut table_struct = vec![];
     let mut profiles = match target.available_profiles.0.lock().unwrap().clone() {
         Some(t) => t,
@@ -137,13 +138,13 @@ fn display_usb_profiles_print_cli_table(target: &CfhdbUsbDevice) {
 
     let table_display = table.display().unwrap();
 
-    println!("{}\n{}", target.sysfs_busid.bright_green(), table_display);
+    println!("{}\n{}", target.address.bright_green(), table_display);
 }
 
-pub fn display_usb_devices(json: bool) {
-    match CfhdbUsbDevice::get_devices() {
+pub fn display_bt_devices(json: bool) {
+    match CfhdbBtDevice::get_devices() {
         Some(devices) => {
-            let profiles = match get_usb_profiles_from_url() {
+            let profiles = match get_bt_profiles_from_url() {
                 Ok(t) => t,
                 Err(e) => {
                     eprintln!("[{}] {}", t!("error").red(), e);
@@ -151,37 +152,37 @@ pub fn display_usb_devices(json: bool) {
                 }
             };
             for i in &devices {
-                CfhdbUsbDevice::set_available_profiles(&profiles, &i);
+                CfhdbBtDevice::set_available_profiles(&profiles, &i);
             }
-            let hashmap = CfhdbUsbDevice::create_class_hashmap(devices);
+            let hashmap = CfhdbBtDevice::create_class_hashmap(devices);
             if json {
-                display_usb_devices_print_json(hashmap)
+                display_bt_devices_print_json(hashmap)
             } else {
-                display_usb_devices_print_cli_table(hashmap)
+                display_bt_devices_print_cli_table(hashmap)
             }
         }
         None => {
             eprintln!(
                 "[{}] {}",
                 t!("error").red(),
-                t!("failed_to_get_usb_devices")
+                t!("failed_to_get_bt_devices")
             );
             exit(1);
         }
     }
 }
 
-pub fn display_usb_profiles(json: bool, target: &str) {
-    match CfhdbUsbDevice::get_device_from_busid(target) {
+pub fn display_bt_profiles(json: bool, target: &str) {
+    match CfhdbBtDevice::get_device_from_address(target) {
         Ok(target_device) => {
-            let profiles = match get_usb_profiles_from_url() {
+            let profiles = match get_bt_profiles_from_url() {
                 Ok(t) => t,
                 Err(e) => {
                     eprintln!("[{}] {}", t!("error").red(), e);
                     exit(1);
                 }
             };
-            CfhdbUsbDevice::set_available_profiles(&profiles, &target_device);
+            CfhdbBtDevice::set_available_profiles(&profiles, &target_device);
             if json {
                 let mut profile_arc =
                     match target_device.available_profiles.0.lock().unwrap().clone() {
@@ -203,25 +204,25 @@ pub fn display_usb_profiles(json: bool, target: &str) {
                 let json_pretty = serde_json::to_string_pretty(&profiles).unwrap();
                 println!("{}", json_pretty);
             } else {
-                display_usb_profiles_print_cli_table(&target_device);
+                display_bt_profiles_print_cli_table(&target_device);
             }
         }
         Err(_) => {
-            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_usb_device"));
+            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_bt_device"));
             exit(1);
         }
     }
 }
 
-pub fn install_usb_profile(profile_codename: &str) {
-    let profiles = match get_usb_profiles_from_url() {
+pub fn install_bt_profile(profile_codename: &str) {
+    let profiles = match get_bt_profiles_from_url() {
         Ok(t) => t,
         Err(e) => {
             eprintln!("[{}] {}", t!("error").red(), e);
             exit(1);
         }
     };
-    match CfhdbUsbProfile::get_profile_from_codename(profile_codename, profiles) {
+    match CfhdbBtProfile::get_profile_from_codename(profile_codename, profiles) {
         Ok(target_profile) => {
             if target_profile.get_status() {
                 println!(
@@ -267,15 +268,15 @@ pub fn install_usb_profile(profile_codename: &str) {
         }
     }
 }
-pub fn uninstall_usb_profile(profile_codename: &str) {
-    let profiles = match get_usb_profiles_from_url() {
+pub fn uninstall_bt_profile(profile_codename: &str) {
+    let profiles = match get_bt_profiles_from_url() {
         Ok(t) => t,
         Err(e) => {
             eprintln!("[{}] {}", t!("error").red(), e);
             exit(1);
         }
     };
-    match CfhdbUsbProfile::get_profile_from_codename(profile_codename, profiles) {
+    match CfhdbBtProfile::get_profile_from_codename(profile_codename, profiles) {
         Ok(target_profile) => {
             if !target_profile.get_status() {
                 println!(
@@ -322,10 +323,10 @@ pub fn uninstall_usb_profile(profile_codename: &str) {
     }
 }
 
-pub fn enable_usb_device(target_sysfs_id: &str) {
-    match CfhdbUsbDevice::get_device_from_busid(target_sysfs_id) {
+pub fn pair_bt_device(target_sysfs_id: &str) {
+    match CfhdbBtDevice::get_device_from_address(target_sysfs_id) {
         Ok(target_device) => {
-            match target_device.enable_device() {
+            match target_device.pair_device() {
                 Ok(t) => t,
                 Err(e) => {
                     eprintln!("[{}] {}", t!("error").red(), e);
@@ -334,15 +335,15 @@ pub fn enable_usb_device(target_sysfs_id: &str) {
             };
         }
         Err(_) => {
-            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_usb_device"));
+            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_bt_device"));
             exit(1);
         }
     }
 }
-pub fn disable_usb_device(target_sysfs_id: &str) {
-    match CfhdbUsbDevice::get_device_from_busid(target_sysfs_id) {
+pub fn connect_bt_device(target_sysfs_id: &str) {
+    match CfhdbBtDevice::get_device_from_address(target_sysfs_id) {
         Ok(target_device) => {
-            match target_device.disable_device() {
+            match target_device.connect_device() {
                 Ok(t) => t,
                 Err(e) => {
                     eprintln!("[{}] {}", t!("error").red(), e);
@@ -351,64 +352,117 @@ pub fn disable_usb_device(target_sysfs_id: &str) {
             };
         }
         Err(_) => {
-            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_usb_device"));
-            exit(1);
-        }
-    }
-}
-
-pub fn start_usb_device(target_sysfs_id: &str) {
-    match CfhdbUsbDevice::get_device_from_busid(target_sysfs_id) {
-        Ok(target_device) => {
-            match target_device.start_device() {
-                Ok(t) => t,
-                Err(e) => {
-                    eprintln!("[{}] {}", t!("error").red(), e);
-                    exit(1);
-                }
-            };
-        }
-        Err(_) => {
-            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_usb_device"));
-            exit(1);
-        }
-    }
-}
-pub fn stop_usb_device(target_sysfs_id: &str) {
-    match CfhdbUsbDevice::get_device_from_busid(target_sysfs_id) {
-        Ok(target_device) => {
-            match target_device.stop_device() {
-                Ok(t) => t,
-                Err(e) => {
-                    eprintln!("[{}] {}", t!("error").red(), e);
-                    exit(1);
-                }
-            };
-        }
-        Err(_) => {
-            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_usb_device"));
+            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_bt_device"));
             exit(1);
         }
     }
 }
 
-fn get_usb_profiles_from_url() -> Result<Vec<CfhdbUsbProfile>, std::io::Error> {
-    let cached_db_path = Path::new("/var/cache/cfhdb/usb.json");
+pub fn disconnect_bt_device(target_sysfs_id: &str) {
+    match CfhdbBtDevice::get_device_from_address(target_sysfs_id) {
+        Ok(target_device) => {
+            match target_device.disconnect_device() {
+                Ok(t) => t,
+                Err(e) => {
+                    eprintln!("[{}] {}", t!("error").red(), e);
+                    exit(1);
+                }
+            };
+        }
+        Err(_) => {
+            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_bt_device"));
+            exit(1);
+        }
+    }
+}
+pub fn block_bt_device(target_sysfs_id: &str) {
+    match CfhdbBtDevice::get_device_from_address(target_sysfs_id) {
+        Ok(target_device) => {
+            match target_device.block_device() {
+                Ok(t) => t,
+                Err(e) => {
+                    eprintln!("[{}] {}", t!("error").red(), e);
+                    exit(1);
+                }
+            };
+        }
+        Err(_) => {
+            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_bt_device"));
+            exit(1);
+        }
+    }
+}
+
+pub fn unblock_bt_device(target_sysfs_id: &str) {
+    match CfhdbBtDevice::get_device_from_address(target_sysfs_id) {
+        Ok(target_device) => {
+            match target_device.unblock_device() {
+                Ok(t) => t,
+                Err(e) => {
+                    eprintln!("[{}] {}", t!("error").red(), e);
+                    exit(1);
+                }
+            };
+        }
+        Err(_) => {
+            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_bt_device"));
+            exit(1);
+        }
+    }
+}
+
+pub fn trust_bt_device(target_sysfs_id: &str) {
+    match CfhdbBtDevice::get_device_from_address(target_sysfs_id) {
+        Ok(target_device) => {
+            match target_device.trust_device() {
+                Ok(t) => t,
+                Err(e) => {
+                    eprintln!("[{}] {}", t!("error").red(), e);
+                    exit(1);
+                }
+            };
+        }
+        Err(_) => {
+            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_bt_device"));
+            exit(1);
+        }
+    }
+}
+pub fn untrust_bt_device(target_sysfs_id: &str) {
+    match CfhdbBtDevice::get_device_from_address(target_sysfs_id) {
+        Ok(target_device) => {
+            match target_device.untrust_device() {
+                Ok(t) => t,
+                Err(e) => {
+                    eprintln!("[{}] {}", t!("error").red(), e);
+                    exit(1);
+                }
+            };
+        }
+        Err(_) => {
+            eprintln!("[{}] {}", t!("error").red(), t!("no_matching_bt_device"));
+            exit(1);
+        }
+    }
+}
+
+fn get_bt_profiles_from_url() -> Result<Vec<CfhdbBtProfile>, std::io::Error> {
+    let cached_db_path = Path::new("/var/cache/cfhdb/bt.json");
     println!(
         "[{}] {}",
         t!("info").bright_green(),
-        t!("usb_download_starting")
+        t!("bt_download_starting")
     );
     let client = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(5))
         .build()
         .unwrap();
-    let data = match client.get(USB_PROFILE_JSON_URL.clone()).send() {
+    let data = match client.get(BT_PROFILE_JSON_URL.clone()).send() {
         Ok(t) => {
             println!(
                 "[{}] {}",
                 t!("info").bright_green(),
-                t!("usb_download_successful")
+                t!("bt_download_successful")
             );
             let cache = t.text().unwrap();
             let _ = fs::File::create(cached_db_path);
@@ -419,24 +473,24 @@ fn get_usb_profiles_from_url() -> Result<Vec<CfhdbUsbProfile>, std::io::Error> {
             println!(
                 "[{}] {}",
                 t!("warn").bright_yellow(),
-                t!("usb_download_failed")
+                t!("bt_download_failed")
             );
             if cached_db_path.exists() {
                 println!(
                     "[{}] {}",
                     t!("info").bright_green(),
-                    t!("usb_download_cache_found")
+                    t!("bt_download_cache_found")
                 );
                 fs::read_to_string(cached_db_path).unwrap()
             } else {
                 eprintln!(
                     "[{}] {}",
                     t!("error").red(),
-                    t!("usb_download_cache_not_found")
+                    t!("bt_download_cache_not_found")
                 );
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::NotFound,
-                    t!("usb_download_cache_not_found"),
+                    t!("bt_download_cache_not_found"),
                 ));
             }
         }
@@ -471,45 +525,75 @@ fn get_usb_profiles_from_url() -> Result<Vec<CfhdbUsbProfile>, std::io::Error> {
                 .as_str()
                 .unwrap_or(&t!("unknown"))
                 .to_string();
-            let class_codes: Vec<String> = match profile["class_codes"].as_array() {
+
+            let class_ids: Vec<String> = match profile["class_ids"].as_array() {
                 Some(t) => t
                     .into_iter()
                     .map(|x| x.as_str().unwrap_or_default().to_string())
                     .collect(),
                 None => vec![],
             };
-            let vendor_ids: Vec<String> = match profile["vendor_ids"].as_array() {
+            let bt_names: Vec<String> = match profile["bt_names"].as_array() {
                 Some(t) => t
                     .into_iter()
                     .map(|x| x.as_str().unwrap_or_default().to_string())
                     .collect(),
                 None => vec![],
             };
-            let product_ids: Vec<String> = match profile["product_ids"].as_array() {
+            let modalias_vendor_ids: Vec<String> = match profile["modalias_vendor_ids"].as_array() {
                 Some(t) => t
                     .into_iter()
                     .map(|x| x.as_str().unwrap_or_default().to_string())
                     .collect(),
                 None => vec![],
             };
-            let blacklisted_class_codes: Vec<String> =
-                match profile["blacklisted_class_codes"].as_array() {
+            let modalias_device_ids: Vec<String> = match profile["modalias_device_ids"].as_array() {
+                Some(t) => t
+                    .into_iter()
+                    .map(|x| x.as_str().unwrap_or_default().to_string())
+                    .collect(),
+                None => vec![],
+            };
+            let modalias_product_ids: Vec<String> = match profile["modalias_product_ids"].as_array() {
+                Some(t) => t
+                    .into_iter()
+                    .map(|x| x.as_str().unwrap_or_default().to_string())
+                    .collect(),
+                None => vec![],
+            };
+            let blacklisted_class_ids: Vec<String> =
+                match profile["blacklisted_class_ids"].as_array() {
+                    Some(t) => t
+                        .into_iter()
+                        .map(|x| x.as_str().unwrap_or_default().to_string())
+                        .collect(),
+                    None => vec![],
+            };
+            let blacklisted_bt_names: Vec<String> = match profile["blacklisted_bt_names"].as_array() {
+                Some(t) => t
+                    .into_iter()
+                    .map(|x| x.as_str().unwrap_or_default().to_string())
+                    .collect(),
+                None => vec![],
+            };
+            let blacklisted_modalias_vendor_ids: Vec<String> =
+                match profile["blacklisted_modalias_vendor_ids"].as_array() {
                     Some(t) => t
                         .into_iter()
                         .map(|x| x.as_str().unwrap_or_default().to_string())
                         .collect(),
                     None => vec![],
                 };
-            let blacklisted_vendor_ids: Vec<String> =
-                match profile["blacklisted_vendor_ids"].as_array() {
+            let blacklisted_modalias_device_ids: Vec<String> =
+                match profile["blacklisted_modalias_device_ids"].as_array() {
                     Some(t) => t
                         .into_iter()
                         .map(|x| x.as_str().unwrap_or_default().to_string())
                         .collect(),
                     None => vec![],
                 };
-            let blacklisted_product_ids: Vec<String> =
-                match profile["blacklisted_product_ids"].as_array() {
+            let blacklisted_modalias_product_ids: Vec<String> =
+                match profile["blacklisted_modalias_product_ids"].as_array() {
                     Some(t) => t
                         .into_iter()
                         .map(|x| x.as_str().unwrap_or_default().to_string())
@@ -521,7 +605,7 @@ fn get_usb_profiles_from_url() -> Result<Vec<CfhdbUsbProfile>, std::io::Error> {
                 None => Some(
                     profile["packages"]
                         .as_array()
-                        .expect("invalid_usb_profile_class_ids")
+                        .expect("invalid_bt_profile_json")
                         .into_iter()
                         .map(|x| x.as_str().unwrap_or_default().to_string())
                         .collect(),
@@ -552,17 +636,21 @@ fn get_usb_profiles_from_url() -> Result<Vec<CfhdbUsbProfile>, std::io::Error> {
             let veiled = profile["veiled"].as_bool().unwrap_or_default();
             let priority = profile["priority"].as_i64().unwrap_or_default();
             // Parse into the Struct
-            let profile_struct = CfhdbUsbProfile {
+            let profile_struct = CfhdbBtProfile {
                 codename,
                 i18n_desc,
                 icon_name,
                 license,
-                class_codes,
-                vendor_ids,
-                product_ids,
-                blacklisted_class_codes,
-                blacklisted_vendor_ids,
-                blacklisted_product_ids,
+                class_ids,
+                bt_names,
+                modalias_vendor_ids,
+                modalias_device_ids,
+                modalias_product_ids,
+                blacklisted_class_ids,
+                blacklisted_bt_names,
+                blacklisted_modalias_vendor_ids,
+                blacklisted_modalias_device_ids,
+                blacklisted_modalias_product_ids,
                 packages,
                 check_script,
                 install_script,
