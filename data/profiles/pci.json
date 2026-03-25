@@ -2,8 +2,8 @@
     "profiles": [
       {
         "codename": "nv-nvb-open.nobaraproject.org",
-        "i18n_desc": "NVIDIA Graphics drivers (Beta) for Linux with Official Nvidia Open Modules (Recommended)",
-        "i18n_desc[en_US]": "NVIDIA Graphics drivers (Beta) for Linux with Official Nvidia Open Modules (Recommended)",
+        "i18n_desc": "NVIDIA Graphics drivers for Linux (Beta) (595.45.04)",
+        "i18n_desc[en_US]": "NVIDIA Graphics drivers for Linux (Beta) (595.45.04)",
         "icon_name": "nvidia",
         "license": "Proprietary",
         "class_ids": ["0300", "0302", "0380"],
@@ -23,8 +23,8 @@
       },
       {
         "codename": "nv-nvnf-open.nobaraproject.org",
-        "i18n_desc": "NVIDIA Graphics drivers (New Feature) for Linux with Official Nvidia Open Modules (Recommended)",
-        "i18n_desc[en_US]": "NVIDIA Graphics drivers (New Feature) for Linux with Official Nvidia Open Modules (Recommended)",
+        "i18n_desc": "NVIDIA Graphics drivers for Linux (New Feature) (590.48.01)",
+        "i18n_desc[en_US]": "NVIDIA Graphics drivers for Linux (New Feature) (590.48.01)",
         "icon_name": "nvidia",
         "license": "Proprietary",
         "class_ids": ["0300", "0302", "0380"],
@@ -45,8 +45,8 @@
       },
       {
         "codename": "nv-nvp-open.nobaraproject.org",
-        "i18n_desc": "NVIDIA Graphics drivers (Production) for Linux with Official Nvidia Open Modules (Recommended)",
-        "i18n_desc[en_US]": "NVIDIA Graphics drivers (Production) for Linux with Official Nvidia Open Modules (Recommended)",
+        "i18n_desc": "NVIDIA Graphics drivers for Linux (Production) (595.45.04) (Recommended)",
+        "i18n_desc[en_US]": "NVIDIA Graphics drivers for Linux (Production) (595.45.04) (Recommended)",
         "icon_name": "nvidia",
         "license": "Proprietary",
         "class_ids": ["0300", "0302", "0380"],
@@ -62,26 +62,6 @@
         "experimental": false,
         "removable": true,
         "priority": 12
-      },
-      {
-        "codename": "nv-nvp.nobaraproject.org",
-        "i18n_desc": "NVIDIA Graphics drivers (Production) for Linux (Closed)",
-        "i18n_desc[en_US]": "NVIDIA Graphics drivers (Production) for Linux (Closed)",
-        "icon_name": "nvidia",
-        "license": "Proprietary",
-        "class_ids": ["0300", "0302", "0380"],
-        "vendor_ids": ["10de"],
-        "device_ids": ["*"],
-        "blacklisted_class_ids": [],
-        "blacklisted_vendor_ids": [],
-        "blacklisted_device_ids": [],
-        "packages": "Option::is_none",
-        "check_script": "dnf repo list --enabled | grep nobara-nvidia-production && rpm -q nvidia-driver && cat /etc/nvidia/kernel.conf | grep \"MODULE_VARIANT=kernel$\"",
-        "install_script": "mkdir -p /etc/yum.repos.d/no-touch-disabled && mv /etc/yum.repos.d/nv-nv*.repo /etc/yum.repos.d/no-touch-disabled && mv /etc/yum.repos.d/no-touch-disabled/nv-nvp.repo /etc/yum.repos.d/ && dnf config-manager setopt nobara-nvidia-production.enabled=1 && dnf remove -y nvidia* && dnf remove -y kmod-nvidia* && dnf remove -y akmod-nvidia && dnf remove -y dkms-nvidia && dnf remove -y libnvidia* && rm -rf /var/lib/dkms/nvidia* && dnf install -y dkms-nvidia nvidia-driver libnvidia-ml libnvidia-ml.i686 libnvidia-fbc nvidia-driver-cuda nvidia-driver-cuda-libs nvidia-driver-cuda-libs.i686 nvidia-driver-libs nvidia-driver-libs.i686 nvidia-kmod-common nvidia-libXNVCtrl nvidia-modprobe nvidia-persistenced nvidia-settings nvidia-xconfig libva-nvidia-driver nvidia-gpu-firmware libnvidia-cfg --refresh && echo 'DNF finished, sleeping 10s...'; sleep 10; sed -i -e 's/kernel-open$/kernel/g' /etc/nvidia/kernel.conf && echo \"options nvidia-drm modeset=1 fbdev=1\" | tee /etc/modprobe.d/nvidia-modeset.conf && chmod 644 /etc/modprobe.d/nvidia-modeset.conf && systemctl enable --now dkms; dkms unbuild nvidia/580.142 --all; dkms autoinstall; dracut -f --regenerate-all",
-        "remove_script": "dnf remove -y nvidia* && dnf remove -y libnvidia* && dnf remove -y kmod-nvidia* && dnf remove -y akmod-nvidia && dnf remove -y dkms-nvidia && dnf remove -y libva-nvidia-driver && rm -rf /var/lib/dkms/nvidia* && dnf install -y nvidia-gpu-firmware; dracut -f --regenerate-all",
-        "experimental": false,
-        "removable": true,
-        "priority": 13
       },
       {
         "codename": "nv-no-initramfs.nobaraproject.org",
