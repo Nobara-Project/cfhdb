@@ -2,8 +2,8 @@
     "profiles": [
       {
         "codename": "nv-nvp-open.nobaraproject.org",
-        "i18n_desc": "NVIDIA Graphics drivers for Linux (Production) (595.84) (Recommended)",
-        "i18n_desc[en_US]": "NVIDIA Graphics drivers for Linux (Production) (595.84) (Recommended)",
+        "i18n_desc": "NVIDIA Graphics drivers for Linux (Production) (595.91.07) (Recommended)",
+        "i18n_desc[en_US]": "NVIDIA Graphics drivers for Linux (Production) (595.91.07) (Recommended)",
         "icon_name": "nvidia",
         "license": "Proprietary",
         "class_ids": ["0300", "0302", "0380"],
@@ -23,8 +23,8 @@
 
       {
         "codename": "nv-nvnf-open.nobaraproject.org",
-        "i18n_desc": "NVIDIA Graphics drivers for Linux (New Feature) (610.43.03)",
-        "i18n_desc[en_US]": "NVIDIA Graphics drivers for Linux (New Feature) (610.43.03)",
+        "i18n_desc": "NVIDIA Graphics drivers for Linux (New Feature) (610.57.04)",
+        "i18n_desc[en_US]": "NVIDIA Graphics drivers for Linux (New Feature) (610.57.04)",
         "icon_name": "nvidia",
         "license": "Proprietary",
         "class_ids": ["0300", "0302", "0380"],
